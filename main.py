@@ -2,19 +2,21 @@ from fastapi import FastAPI, Request, Form, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import requests
+import json
 import io
+import os
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-BASE_URL = "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/crm.deal.list"
-PARAMS = {
-    "select[]": ["ID", "TITLE", "STAGE_ID", "UF_CRM_1700661314351", "DATE_CREATE"],
-    "filter[>=DATE_CREATE]": "2023-12-13",
-    "start": 0
-}
+CACHE_PATH = "cache.json"
+
+def carregar_cache():
+    if not os.path.exists(CACHE_PATH):
+        return []
+    with open(CACHE_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
@@ -23,72 +25,38 @@ async def index(request: Request):
 
 def buscar_cep_unico(cep):
     cep = cep.replace("-", "").strip()
+    dados = carregar_cache()
     resultados = []
-    local_params = PARAMS.copy()
 
-    while True:
-        try:
-            response = requests.get(BASE_URL, params=local_params, timeout=10)
-            response.raise_for_status()
-            data = response.json()
-        except Exception as e:
-            return [{"error": f"Erro na requisição: {e}"}]
-
-        deals = data.get("result", [])
-        if not deals:
-            break
-
-        for deal in deals:
-            c = (deal.get("UF_CRM_1700661314351") or "").replace("-", "").strip()
-            if c == cep:
-                resultados.append({
-                    "id_card": deal['ID'],
-                    "cliente": deal['TITLE'],
-                    "fase": deal['STAGE_ID'],
-                    "cep": c,
-                    "criado_em": deal.get("DATE_CREATE")
-                })
-
-        if 'next' in data and data['next']:
-            local_params['start'] = data['next']
-        else:
-            break
+    for deal in dados:
+        c = (deal.get("UF_CRM_1700661314351") or "").replace("-", "").strip()
+        if c == cep:
+            resultados.append({
+                "id_card": deal['ID'],
+                "cliente": deal['TITLE'],
+                "fase": deal['STAGE_ID'],
+                "cep": c,
+                "criado_em": deal.get("DATE_CREATE")
+            })
 
     return resultados
 
 
 def buscar_varios_ceps(lista_ceps):
     ceps_set = set(c.strip().replace("-", "") for c in lista_ceps if c.strip())
+    dados = carregar_cache()
     resultados = []
-    local_params = PARAMS.copy()
 
-    while True:
-        try:
-            response = requests.get(BASE_URL, params=local_params, timeout=15)
-            response.raise_for_status()
-            data = response.json()
-        except Exception as e:
-            return [{"error": f"Erro na requisição: {e}"}]
-
-        deals = data.get("result", [])
-        if not deals:
-            break
-
-        for deal in deals:
-            c = (deal.get("UF_CRM_1700661314351") or "").replace("-", "").strip()
-            if c in ceps_set:
-                resultados.append({
-                    "id_card": deal['ID'],
-                    "cliente": deal['TITLE'],
-                    "fase": deal['STAGE_ID'],
-                    "cep": c,
-                    "criado_em": deal.get("DATE_CREATE")
-                })
-
-        if 'next' in data and data['next']:
-            local_params['start'] = data['next']
-        else:
-            break
+    for deal in dados:
+        c = (deal.get("UF_CRM_1700661314351") or "").replace("-", "").strip()
+        if c in ceps_set:
+            resultados.append({
+                "id_card": deal['ID'],
+                "cliente": deal['TITLE'],
+                "fase": deal['STAGE_ID'],
+                "cep": c,
+                "criado_em": deal.get("DATE_CREATE")
+            })
 
     return resultados
 
