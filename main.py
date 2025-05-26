@@ -1,16 +1,15 @@
-from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi import FastAPI, Request, Form, UploadFile, File
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import requests
+import io
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
 templates = Jinja2Templates(directory="templates")
 
 BASE_URL = "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/crm.deal.list"
-
 PARAMS = {
     "select[]": ["ID", "TITLE", "STAGE_ID", "UF_CRM_1700661314351", "DATE_CREATE"],
     "filter[>=DATE_CREATE]": "2023-11-01",
@@ -21,8 +20,7 @@ PARAMS = {
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.post("/buscar", response_class=JSONResponse)
-async def buscar(cep: str = Form(...)):
+def buscar_cep(cep):
     cep = cep.replace("-", "").strip()
     resultados = []
     total_processado = 0
@@ -34,7 +32,7 @@ async def buscar(cep: str = Form(...)):
             response.raise_for_status()
             data = response.json()
         except Exception as e:
-            return {"error": f"Erro na requisição: {e}"}
+            return [{"error": f"Erro na requisição: {e}"}]
 
         if 'result' not in data:
             break
@@ -62,4 +60,31 @@ async def buscar(cep: str = Form(...)):
         else:
             break
 
-    return {"total": len(resultados), "resultados": resultados}
+    return resultados
+
+@app.post("/buscar")
+async def buscar(cep: str = Form(None), arquivo: UploadFile = File(None)):
+    resultados = []
+
+    if arquivo:
+        conteudo = await arquivo.read()
+        ceps = conteudo.decode().splitlines()
+        
+        all_resultados = []
+        for c in ceps:
+            r = buscar_cep(c)
+            all_resultados.extend(r)
+        
+        output = io.StringIO()
+        for res in all_resultados:
+            output.write(f"ID: {res['id_card']} | Cliente: {res['cliente']} | Fase: {res['fase']} | CEP: {res['cep']} | Criado em: {res['criado_em']}\n")
+        output.seek(0)
+        
+        return PlainTextResponse(content=output.read(), media_type='text/plain')
+
+    elif cep:
+        resultados = buscar_cep(cep)
+        return JSONResponse(content={"total": len(resultados), "resultados": resultados})
+
+    else:
+        return JSONResponse(content={"error": "Nenhum CEP ou arquivo enviado."})
