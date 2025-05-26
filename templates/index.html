@@ -1,59 +1,85 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Busca de CEP</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; }
-    #resultado pre { background: #eee; padding: 10px; border-radius: 4px; }
-  </style>
+  <title>Buscar Cards por CEP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h1>Consulta de CEPs</h1>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+  <div class="bg-white p-6 rounded-lg shadow-lg space-y-4 w-full max-w-xl">
+    <h1 class="text-2xl font-bold text-center text-gray-800">Consulta de CEPs</h1>
 
-  <form id="form-busca" enctype="multipart/form-data">
-    <label>CEP:
-      <input type="text" name="cep">
-    </label>
-    <button type="submit">Buscar</button>
-    <br><br>
-    <label>Ou envie um arquivo (.txt, um CEP por linha):
-      <input type="file" name="arquivo">
-    </label>
-    <br><br>
-  </form>
+    <form id="form-busca" class="space-y-4" enctype="multipart/form-data">
+      <div>
+        <label class="block text-gray-700 font-semibold">Digite o CEP:</label>
+        <input type="text" name="cep" class="border p-2 rounded w-full">
+      </div>
 
-  <div id="resultado"></div>
+      <div>
+        <label class="block text-gray-700 font-semibold">Ou envie um arquivo (.txt):</label>
+        <input type="file" name="arquivo" accept=".txt" class="border p-2 rounded w-full">
+      </div>
+
+      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        Buscar
+      </button>
+
+      <div id="carregando" class="hidden text-blue-500 font-medium text-center">Carregando...</div>
+    </form>
+  </div>
+
+  <div id="resultado" class="mt-8 w-full max-w-2xl space-y-4"></div>
 
   <script>
     const form = document.getElementById('form-busca');
     const resultadoDiv = document.getElementById('resultado');
+    const carregando = document.getElementById('carregando');
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const formData = new FormData(form);
+
+      resultadoDiv.innerHTML = '';
+      carregando.classList.remove('hidden');
 
       const response = await fetch('/buscar', {
         method: 'POST',
         body: formData
       });
 
+      carregando.classList.add('hidden');
+
       const contentType = response.headers.get("content-type");
 
       if (contentType.includes("application/json")) {
         const data = await response.json();
         if (data.resultados && data.resultados.length) {
-          resultadoDiv.innerHTML = "<h3>Resultados:</h3><ul>" +
-            data.resultados.map(r =>
-              `<li><strong>ID:</strong> ${r.id_card}, <strong>Cliente:</strong> ${r.cliente}, <strong>Fase:</strong> ${r.fase}, <strong>CEP:</strong> ${r.cep}, <strong>Criado em:</strong> ${r.criado_em}</li>`
-            ).join("") + "</ul>";
+          let html = '<h2 class="text-xl font-semibold text-gray-800 mb-4">Resultados:</h2>';
+          html += '<div class="grid gap-4">';
+
+          data.resultados.forEach(r => {
+            html += `
+              <div class="bg-white rounded-lg shadow p-4 border border-gray-200">
+                <p><strong>ID:</strong> ${r.id_card}</p>
+                <p><strong>Cliente:</strong> ${r.cliente}</p>
+                <p><strong>Fase:</strong> ${r.fase}</p>
+                <p><strong>CEP:</strong> ${r.cep}</p>
+                <p><strong>Criado em:</strong> ${r.criado_em}</p>
+              </div>
+            `;
+          });
+
+          html += '</div>';
+          resultadoDiv.innerHTML = html;
         } else {
-          resultadoDiv.innerHTML = "<p>Nenhum card encontrado para esse CEP.</p>";
+          resultadoDiv.innerHTML = "<p class='text-gray-600 text-center'>Nenhum card encontrado para esse CEP.</p>";
         }
-      }
-      else {
+      } else {
         const text = await response.text();
-        resultadoDiv.innerHTML = `<h3>Resultado do arquivo:</h3><pre>${text}</pre>`;
+        resultadoDiv.innerHTML = `
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">Resultado do Arquivo:</h2>
+          <pre class="bg-white border border-gray-300 p-4 rounded-lg whitespace-pre-wrap">${text}</pre>
+        `;
       }
     });
   </script>
