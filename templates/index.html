@@ -1,75 +1,61 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <title>Buscar Cards por CEP</title>
-    <script src="https://unpkg.com/htmx.org@1.9.4"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8">
+  <title>Busca de CEP</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #resultado pre { background: #eee; padding: 10px; border-radius: 4px; }
+  </style>
 </head>
-<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
-    <img src="/static/preta_reta_azul (1).svg" alt="Logo" class="w-48 mb-6">
+<body>
+  <h1>Consulta de CEPs</h1>
 
-    <form id="cep-form" class="bg-white p-6 rounded-lg shadow-lg space-y-4">
-        <label class="block text-gray-700 font-bold">Digite o CEP (ou envie arquivo):</label>
-        <input type="text" name="cep" class="border p-2 rounded w-full">
-    
-        <input type="file" name="arquivo" accept=".txt" class="border p-2 rounded w-full">
-    
-        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-            Buscar
-        </button>
+  <form id="form-busca" enctype="multipart/form-data">
+    <label>CEP:
+      <input type="text" name="cep">
+    </label>
+    <button type="submit">Buscar</button>
+    <br><br>
+    <label>Ou envie um arquivo (.txt, um CEP por linha):
+      <input type="file" name="arquivo">
+    </label>
+    <br><br>
+  </form>
 
-        <div id="carregando" class="hidden text-blue-500">Carregando...</div>
-    </form>
+  <div id="resultado"></div>
 
-    <div id="resultado" class="mt-6 w-full max-w-2xl"></div>
+  <script>
+    const form = document.getElementById('form-busca');
+    const resultadoDiv = document.getElementById('resultado');
 
-    <script>
-document.getElementById('cep-form').addEventListener('submit', async function(e) {
-    e.preventDefault();
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
 
-    const formData = new FormData(this);
-    const resultado = document.getElementById('resultado');
-    const carregando = document.getElementById('carregando');
+      const response = await fetch('/buscar', {
+        method: 'POST',
+        body: formData
+      });
 
-    carregando.classList.remove('hidden');
-    resultado.innerHTML = '';
+      const contentType = response.headers.get("content-type");
 
-    const resp = await fetch('/buscar', { method: 'POST', body: formData });
-
-    carregando.classList.add('hidden');
-
-    const contentType = resp.headers.get('Content-Type');
-
-    if (contentType.includes('application/json')) {
-        const data = await resp.json();
-        if (data.resultados.length === 0) {
-            resultado.innerHTML = '<p class="text-gray-600">Nenhum resultado encontrado.</p>';
+      if (contentType.includes("application/json")) {
+        const data = await response.json();
+        if (data.resultados && data.resultados.length) {
+          resultadoDiv.innerHTML = "<h3>Resultados:</h3><ul>" +
+            data.resultados.map(r =>
+              `<li><strong>ID:</strong> ${r.id_card}, <strong>Cliente:</strong> ${r.cliente}, <strong>Fase:</strong> ${r.fase}, <strong>CEP:</strong> ${r.cep}, <strong>Criado em:</strong> ${r.criado_em}</li>`
+            ).join("") + "</ul>";
         } else {
-            let html = '<div class="grid gap-4">';
-            data.resultados.forEach(r => {
-                html += `
-                <div class="bg-white rounded shadow p-4 border border-gray-200">
-                    <p><strong>ID:</strong> ${r.id_card}</p>
-                    <p><strong>Cliente:</strong> ${r.cliente}</p>
-                    <p><strong>Fase:</strong> ${r.fase}</p>
-                    <p><strong>CEP:</strong> ${r.cep}</p>
-                    <p><strong>Criado em:</strong> ${r.criado_em}</p>
-                </div>`;
-            });
-            html += '</div>';
-            resultado.innerHTML = html;
+          resultadoDiv.innerHTML = "<p>Nenhum card encontrado para esse CEP.</p>";
         }
-    } else if (contentType.includes('text/plain')) {
-        const blob = await resp.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'resultado.txt';
-        a.click();
-        resultado.innerHTML = '<p class="text-green-600">Arquivo gerado: resultado.txt</p>';
-    }
-});
-</script>
+      }
+      else {
+        const text = await response.text();
+        resultadoDiv.innerHTML = `<h3>Resultado do arquivo:</h3><pre>${text}</pre>`;
+      }
+    });
+  </script>
 </body>
 </html>
