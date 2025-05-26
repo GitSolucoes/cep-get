@@ -48,10 +48,6 @@ def buscar_cep_unico(cep):
                     "cep": c,
                     "criado_em": deal.get("DATE_CREATE")
                 })
-                break  # encontrou, para de buscar
-
-        if resultados:
-            break
 
         if 'next' in data and data['next']:
             local_params['start'] = data['next']
