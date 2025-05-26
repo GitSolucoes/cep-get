@@ -22,7 +22,6 @@ def carregar_cache():
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-
 def buscar_cep_unico(cep):
     cep = cep.replace("-", "").strip()
     dados = carregar_cache()
@@ -40,7 +39,6 @@ def buscar_cep_unico(cep):
             })
 
     return resultados
-
 
 def buscar_varios_ceps(lista_ceps):
     ceps_set = set(c.strip().replace("-", "") for c in lista_ceps if c.strip())
