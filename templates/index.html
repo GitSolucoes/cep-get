@@ -25,45 +25,51 @@
     <div id="resultado" class="mt-6 w-full max-w-2xl"></div>
 
     <script>
-    document.getElementById('cep-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
+document.getElementById('cep-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
 
-        const formData = new FormData(this);
-        const resultado = document.getElementById('resultado');
-        const carregando = document.getElementById('carregando');
+    const formData = new FormData(this);
+    const resultado = document.getElementById('resultado');
+    const carregando = document.getElementById('carregando');
 
-        carregando.classList.remove('hidden');
-        resultado.innerHTML = '';
+    carregando.classList.remove('hidden');
+    resultado.innerHTML = '';
 
-        const resp = await fetch('/buscar', { method: 'POST', body: formData });
+    const resp = await fetch('/buscar', { method: 'POST', body: formData });
 
-        carregando.classList.add('hidden');
+    carregando.classList.add('hidden');
 
-        const contentType = resp.headers.get('Content-Type');
+    const contentType = resp.headers.get('Content-Type');
 
-        if (contentType.includes('application/json')) {
-            const data = await resp.json();
-            let html = '';
-            if (data.resultados.length === 0) {
-                html = '<p>Nenhum resultado encontrado.</p>';
-            } else {
-                html = '<ul>';
-                data.resultados.forEach(r => {
-                    html += `<li>ID: ${r.id_card} | Cliente: ${r.cliente} | Fase: ${r.fase} | CEP: ${r.cep} | Criado em: ${r.criado_em}</li>`;
-                });
-                html += '</ul>';
-            }
+    if (contentType.includes('application/json')) {
+        const data = await resp.json();
+        if (data.resultados.length === 0) {
+            resultado.innerHTML = '<p class="text-gray-600">Nenhum resultado encontrado.</p>';
+        } else {
+            let html = '<div class="grid gap-4">';
+            data.resultados.forEach(r => {
+                html += `
+                <div class="bg-white rounded shadow p-4 border border-gray-200">
+                    <p><strong>ID:</strong> ${r.id_card}</p>
+                    <p><strong>Cliente:</strong> ${r.cliente}</p>
+                    <p><strong>Fase:</strong> ${r.fase}</p>
+                    <p><strong>CEP:</strong> ${r.cep}</p>
+                    <p><strong>Criado em:</strong> ${r.criado_em}</p>
+                </div>`;
+            });
+            html += '</div>';
             resultado.innerHTML = html;
-        } else if (contentType.includes('text/plain')) {
-            const blob = await resp.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'resultado.txt';
-            a.click();
-            resultado.innerHTML = '<p>Arquivo gerado: resultado.txt</p>';
         }
-    });
-    </script>
+    } else if (contentType.includes('text/plain')) {
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'resultado.txt';
+        a.click();
+        resultado.innerHTML = '<p class="text-green-600">Arquivo gerado: resultado.txt</p>';
+    }
+});
+</script>
 </body>
 </html>
