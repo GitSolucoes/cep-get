@@ -40,18 +40,19 @@ def buscar_cep(cep):
         deals = data['result']
         if not deals:
             break
+    
+    for deal in deals:
+        c = (deal.get("UF_CRM_1700661314351") or "").replace("-", "").strip()
+        if c == cep:
+            resultado = {
+                "id_card": deal['ID'],
+                "cliente": deal['TITLE'],
+                "fase": deal['STAGE_ID'],
+                "cep": c,
+                "criado_em": deal.get("DATE_CREATE")
+            }
+            resultados.append(resultado)
 
-        for deal in deals:
-            c = deal.get("UF_CRM_1700661314351", "").replace("-", "").strip()
-            if c == cep:
-                resultado = {
-                    "id_card": deal['ID'],
-                    "cliente": deal['TITLE'],
-                    "fase": deal['STAGE_ID'],
-                    "cep": c,
-                    "criado_em": deal.get("DATE_CREATE")
-                }
-                resultados.append(resultado)
 
         total_processado += len(deals)
 
