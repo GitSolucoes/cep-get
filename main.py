@@ -66,7 +66,7 @@ def buscar_cep(cep):
 async def buscar(cep: str = Form(None), arquivo: UploadFile = File(None)):
     resultados = []
 
-    if arquivo:
+    if arquivo and arquivo.filename != "":
         conteudo = await arquivo.read()
         ceps = conteudo.decode().splitlines()
         
