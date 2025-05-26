@@ -9,10 +9,12 @@
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
     <img src="/static/preta_reta_azul (1).svg" alt="Logo" class="w-48 mb-6">
 
-    <form hx-post="/buscar" hx-trigger="submit" hx-target="#resultado" hx-indicator="#carregando" class="bg-white p-6 rounded-lg shadow-lg space-y-4">
-        <label class="block text-gray-700 font-bold">Digite o CEP:</label>
-        <input type="text" name="cep" class="border p-2 rounded w-full" required>
-
+    <form id="cep-form" class="bg-white p-6 rounded-lg shadow-lg space-y-4">
+        <label class="block text-gray-700 font-bold">Digite o CEP (ou envie arquivo):</label>
+        <input type="text" name="cep" class="border p-2 rounded w-full">
+    
+        <input type="file" name="arquivo" accept=".txt" class="border p-2 rounded w-full">
+    
         <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
             Buscar
         </button>
@@ -21,5 +23,47 @@
     </form>
 
     <div id="resultado" class="mt-6 w-full max-w-2xl"></div>
+
+    <script>
+    document.getElementById('cep-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const resultado = document.getElementById('resultado');
+        const carregando = document.getElementById('carregando');
+
+        carregando.classList.remove('hidden');
+        resultado.innerHTML = '';
+
+        const resp = await fetch('/buscar', { method: 'POST', body: formData });
+
+        carregando.classList.add('hidden');
+
+        const contentType = resp.headers.get('Content-Type');
+
+        if (contentType.includes('application/json')) {
+            const data = await resp.json();
+            let html = '';
+            if (data.resultados.length === 0) {
+                html = '<p>Nenhum resultado encontrado.</p>';
+            } else {
+                html = '<ul>';
+                data.resultados.forEach(r => {
+                    html += `<li>ID: ${r.id_card} | Cliente: ${r.cliente} | Fase: ${r.fase} | CEP: ${r.cep} | Criado em: ${r.criado_em}</li>`;
+                });
+                html += '</ul>';
+            }
+            resultado.innerHTML = html;
+        } else if (contentType.includes('text/plain')) {
+            const blob = await resp.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'resultado.txt';
+            a.click();
+            resultado.innerHTML = '<p>Arquivo gerado: resultado.txt</p>';
+        }
+    });
+    </script>
 </body>
 </html>
