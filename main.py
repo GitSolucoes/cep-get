@@ -12,7 +12,7 @@ templates = Jinja2Templates(directory="templates")
 BASE_URL = "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/crm.deal.list"
 PARAMS = {
     "select[]": ["ID", "TITLE", "STAGE_ID", "UF_CRM_1700661314351", "DATE_CREATE"],
-    "filter[>=DATE_CREATE]": "2023-11-01",
+    "filter[>=DATE_CREATE]": "2023-12-13",
     "start": 0
 }
 
