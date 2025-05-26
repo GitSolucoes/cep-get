@@ -20,10 +20,10 @@ PARAMS = {
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-def buscar_cep(cep):
+
+def buscar_cep_unico(cep):
     cep = cep.replace("-", "").strip()
     resultados = []
-    total_processado = 0
     local_params = PARAMS.copy()
 
     while True:
@@ -34,27 +34,24 @@ def buscar_cep(cep):
         except Exception as e:
             return [{"error": f"Erro na requisição: {e}"}]
 
-        if 'result' not in data:
-            break
-
-        deals = data['result']
+        deals = data.get("result", [])
         if not deals:
             break
-    
-    for deal in deals:
-        c = (deal.get("UF_CRM_1700661314351") or "").replace("-", "").strip()
-        if c == cep:
-            resultado = {
-                "id_card": deal['ID'],
-                "cliente": deal['TITLE'],
-                "fase": deal['STAGE_ID'],
-                "cep": c,
-                "criado_em": deal.get("DATE_CREATE")
-            }
-            resultados.append(resultado)
 
+        for deal in deals:
+            c = (deal.get("UF_CRM_1700661314351") or "").replace("-", "").strip()
+            if c == cep:
+                resultados.append({
+                    "id_card": deal['ID'],
+                    "cliente": deal['TITLE'],
+                    "fase": deal['STAGE_ID'],
+                    "cep": c,
+                    "criado_em": deal.get("DATE_CREATE")
+                })
+                break  # encontrou, para de buscar
 
-        total_processado += len(deals)
+        if resultados:
+            break
 
         if 'next' in data and data['next']:
             local_params['start'] = data['next']
@@ -63,31 +60,62 @@ def buscar_cep(cep):
 
     return resultados
 
+
+def buscar_varios_ceps(lista_ceps):
+    ceps_set = set(c.strip().replace("-", "") for c in lista_ceps if c.strip())
+    resultados = []
+    local_params = PARAMS.copy()
+
+    while True:
+        try:
+            response = requests.get(BASE_URL, params=local_params, timeout=15)
+            response.raise_for_status()
+            data = response.json()
+        except Exception as e:
+            return [{"error": f"Erro na requisição: {e}"}]
+
+        deals = data.get("result", [])
+        if not deals:
+            break
+
+        for deal in deals:
+            c = (deal.get("UF_CRM_1700661314351") or "").replace("-", "").strip()
+            if c in ceps_set:
+                resultados.append({
+                    "id_card": deal['ID'],
+                    "cliente": deal['TITLE'],
+                    "fase": deal['STAGE_ID'],
+                    "cep": c,
+                    "criado_em": deal.get("DATE_CREATE")
+                })
+
+        if 'next' in data and data['next']:
+            local_params['start'] = data['next']
+        else:
+            break
+
+    return resultados
+
+
 @app.post("/buscar")
 async def buscar(cep: str = Form(None), arquivo: UploadFile = File(None)):
-    resultados = []
-
     if arquivo and arquivo.filename != "":
         conteudo = await arquivo.read()
         ceps = conteudo.decode().splitlines()
-        
-        all_resultados = []
-        for c in ceps:
-            r = buscar_cep(c)
-            all_resultados.extend(r)
-        
+
+        resultados = buscar_varios_ceps(ceps)
+
         output = io.StringIO()
-        for res in all_resultados:
+        for res in resultados:
             if "error" in res:
                 output.write(f"Erro: {res['error']}\n")
             else:
                 output.write(f"ID: {res['id_card']} | Cliente: {res['cliente']} | Fase: {res['fase']} | CEP: {res['cep']} | Criado em: {res['criado_em']}\n")
         output.seek(0)
-        
         return PlainTextResponse(content=output.read(), media_type='text/plain')
 
     elif cep:
-        resultados = buscar_cep(cep)
+        resultados = buscar_cep_unico(cep)
         return JSONResponse(content={"total": len(resultados), "resultados": resultados})
 
     else:
