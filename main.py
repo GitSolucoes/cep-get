@@ -31,10 +31,14 @@ def bitrix_get(method, params=None):
     response.raise_for_status()
     return response.json()
 
+
+
 def get_pipelines():
     params = {"entityTypeId": 2}  # Para deals
     data = bitrix_get("crm.category.list", params)
-    return {str(item["ID"]): item["NAME"] for item in data.get("result", [])}
+    return {str(item["ID"]): item["NAME"] for item in data.get("data", [])}
+        raise ValueError("A resposta da API não contém a chave 'result' ou ela não é uma lista.")
+
 
 def get_etapas():
     etapas = {}
