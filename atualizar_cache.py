@@ -6,7 +6,7 @@ import os
 # Configurações
 BASE_URL = "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/crm.deal.list"
 
-params = {
+PARAMS = {
     "select[]": ["ID", "TITLE", "STAGE_ID", "UF_CRM_1700661314351", "UF_CRM_1698698407472", "DATE_CREATE"],
     "filter[>=DATE_CREATE]": "2023-11-01",
     "start": 0
