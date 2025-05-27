@@ -83,7 +83,7 @@ async def buscar(cep: str = Form(None), arquivo: UploadFile = File(None)):
             if "error" in res:
                 output.write(f"Erro: {res['error']}\n")
             else:
-                output.write(f"ID: {res['id_card']} | Cliente: {res['cliente']} | Fase: {res['fase']} | CEP: {res['cep']} | Contato: {r['contact']} | Criado em: {res['criado_em']}\n")
+                output.write(f"ID: {res['id_card']} | Cliente: {res['cliente']} | Fase: {res['fase']} | CEP: {res['cep']} | Contato: {res['contact']} | Criado em: {res['criado_em']}\n")
         output.seek(0)
         return PlainTextResponse(content=output.read(), media_type='text/plain')
 
