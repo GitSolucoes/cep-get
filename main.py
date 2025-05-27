@@ -32,13 +32,13 @@ def buscar_cep_unico(cep):
 
     for deal in dados:
         c = (deal.get("UF_CRM_1700661314351") or "").replace("-", "").strip()
-        contact = deal.get("UF_CRM_1698698407472")
+        contato = deal.get("UF_CRM_1698698407472")
         if c == cep:
             resultados.append({
                 "id_card": deal.get("ID"),
                 "cliente": deal.get("TITLE"),
                 "fase": deal.get("STAGE_ID"),
-                "contact": contact,
+                "contato": contato,
                 "cep": c,
                 "criado_em": deal.get("DATE_CREATE")
             })
@@ -52,13 +52,13 @@ def buscar_varios_ceps(lista_ceps):
 
     for deal in dados:
         c = (deal.get("UF_CRM_1700661314351") or "").replace("-", "").strip()
-        contact = deal.get("UF_CRM_1698698407472")
+        contato = deal.get("UF_CRM_1698698407472")
         if c in ceps_set:
             resultados.append({
                 "id_card": deal.get("ID"),
                 "cliente": deal.get("TITLE"),
                 "fase": deal.get("STAGE_ID"),
-                "contact": contact,
+                "contato": contato,
                 "cep": c,
                 "criado_em": deal.get("DATE_CREATE")
             })
@@ -118,7 +118,7 @@ async def buscar(
             output = io.StringIO()
             for res in resultados:
                 output.write(
-                    f"ID: {res['id_card']} | Cliente: {res['cliente']} | Fase: {res['fase']} | CEP: {res['cep']} | Contato: {res['contact']} | Criado em: {res['criado_em']}\n"
+                    f"ID: {res['id_card']} | Cliente: {res['cliente']} | Fase: {res['fase']} | CEP: {res['cep']} | Contato: {res['contato']} | Criado em: {res['criado_em']}\n"
                 )
             output.seek(0)
             return PlainTextResponse(content=output.read(), media_type='text/plain')
