@@ -13,7 +13,6 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 CACHE_PATH = "cache.json"
-
 BITRIX_URL = "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/"
 
 # Cache dinâmico
@@ -31,35 +30,26 @@ def bitrix_get(method, params=None):
     response.raise_for_status()
     return response.json()
 
-
 def get_pipelines():
-    params = {"entityTypeId": 2}  # Para negócios (deals)
+    params = {"entityTypeId": 2}
     data = bitrix_get("crm.category.list", params)
-
     categorias = data.get("result", {}).get("categories", [])
     if not isinstance(categorias, list):
         raise ValueError("A resposta da API não contém a chave 'categories' ou ela não é uma lista.")
-
     return {str(cat["id"]): cat["name"] for cat in categorias}
-
 
 def get_etapas():
     etapas = {}
     params = {"entityTypeId": 2}
     categorias = bitrix_get("crm.category.list", params).get("result", {}).get("categories", [])
-
     for cat in categorias:
-        categoria_id = cat["id"]  # "id" com minúsculo
+        categoria_id = cat["id"]
         entity_id = f"DEAL_STAGE_{categoria_id}"
         status_params = {"filter[ENTITY_ID]": entity_id}
         data = bitrix_get("crm.status.list", status_params)
-
         for stage in data.get("result", []):
             etapas[stage["STATUS_ID"]] = stage["NAME"]
-
     return etapas
-
-    
 
 def get_campos_personalizados():
     data = bitrix_get("crm.deal.fields")
@@ -130,7 +120,7 @@ def formatar_card(deal):
     }
 
     for campo, valor in deal.items():
-        if campo.startswith("UF_CRM") and valor:
+        if valor and campo.startswith("UF_CRM"):
             nome_legivel = get_campo_legivel(campo)
             card_formatado["campos_preenchidos"][nome_legivel] = valor
 
