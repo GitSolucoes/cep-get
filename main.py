@@ -1,9 +1,10 @@
 from fastapi import FastAPI, Request, Form, UploadFile, File
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import json
 import io
+import pandas as pd
 import os
 
 app = FastAPI()
@@ -12,7 +13,7 @@ templates = Jinja2Templates(directory="templates")
 
 CACHE_PATH = "cache.json"
 
-# Função protegida contra erros de JSON corrompido
+# Função: carregar cache protegido contra erro
 def carregar_cache():
     if not os.path.exists(CACHE_PATH):
         return []
@@ -23,11 +24,7 @@ def carregar_cache():
         print("⚠️ ERRO: cache.json inválido ou corrompido.")
         return []
 
-@app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
-
-# Busca por CEP único (retorna todos os cards com o mesmo CEP)
+# Função: buscar por um único CEP
 def buscar_cep_unico(cep):
     cep = cep.replace("-", "").strip()
     dados = carregar_cache()
@@ -45,10 +42,9 @@ def buscar_cep_unico(cep):
                 "cep": c,
                 "criado_em": deal.get("DATE_CREATE")
             })
-
     return resultados
 
-# Busca vários CEPs de uma vez (para upload de arquivo)
+# Função: buscar vários CEPs
 def buscar_varios_ceps(lista_ceps):
     ceps_set = set(c.strip().replace("-", "") for c in lista_ceps if c.strip())
     dados = carregar_cache()
@@ -66,26 +62,66 @@ def buscar_varios_ceps(lista_ceps):
                 "cep": c,
                 "criado_em": deal.get("DATE_CREATE")
             })
-
     return resultados
 
-# Rota principal de busca
-@app.post("/buscar")
-async def buscar(cep: str = Form(None), arquivo: UploadFile = File(None)):
-    if arquivo and arquivo.filename != "":
-        conteudo = await arquivo.read()
+# Função: extrair CEPs de arquivo
+async def extrair_ceps_arquivo(arquivo: UploadFile):
+    nome = arquivo.filename.lower()
+    conteudo = await arquivo.read()
+    ceps = []
+
+    if nome.endswith('.txt'):
         ceps = conteudo.decode().splitlines()
 
+    elif nome.endswith('.csv'):
+        df = pd.read_csv(io.BytesIO(conteudo))
+        for col in df.columns:
+            if 'cep' in col.lower():
+                ceps = df[col].astype(str).tolist()
+                break
+
+    elif nome.endswith('.xlsx'):
+        df = pd.read_excel(io.BytesIO(conteudo))
+        for col in df.columns:
+            if 'cep' in col.lower():
+                ceps = df[col].astype(str).tolist()
+                break
+
+    return ceps
+
+# Página inicial
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
+
+# Rota de busca
+@app.post("/buscar")
+async def buscar(
+    cep: str = Form(None),
+    arquivo: UploadFile = File(None),
+    formato: str = Form("txt")  # novo parâmetro opcional para escolher formato
+):
+    if arquivo and arquivo.filename != "":
+        ceps = await extrair_ceps_arquivo(arquivo)
         resultados = buscar_varios_ceps(ceps)
 
-        output = io.StringIO()
-        for res in resultados:
-            if "error" in res:
-                output.write(f"Erro: {res['error']}\n")
-            else:
-                output.write(f"ID: {res['id_card']} | Cliente: {res['cliente']} | Fase: {res['fase']} | CEP: {res['cep']} | Contato: {res['contact']} | Criado em: {res['criado_em']}\n")
-        output.seek(0)
-        return PlainTextResponse(content=output.read(), media_type='text/plain')
+        if formato == "xlsx":
+            df = pd.DataFrame(resultados)
+            caminho_saida = "resultado.xlsx"
+            df.to_excel(caminho_saida, index=False)
+            return FileResponse(
+                caminho_saida,
+                media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                filename="resultado.xlsx"
+            )
+        else:  # padrão: txt
+            output = io.StringIO()
+            for res in resultados:
+                output.write(
+                    f"ID: {res['id_card']} | Cliente: {res['cliente']} | Fase: {res['fase']} | CEP: {res['cep']} | Contato: {res['contact']} | Criado em: {res['criado_em']}\n"
+                )
+            output.seek(0)
+            return PlainTextResponse(content=output.read(), media_type='text/plain')
 
     elif cep:
         resultados = buscar_cep_unico(cep)
