@@ -1,8 +1,9 @@
 import requests
 import json
 import time
+import os
 
-
+# Configurações
 BASE_URL = "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/crm.deal.list"
 PARAMS = {
     "select[]": ["ID", "TITLE", "STAGE_ID", "UF_CRM_1700661314351", "DATE_CREATE"],
@@ -10,20 +11,42 @@ PARAMS = {
     "start": 0
 }
 
-MAX_RETRIES = 20
-RETRY_DELAY = 30  # espera entre tentativas em caso de erro (ex: 429)
-REQUEST_DELAY = 2  # espera entre requisições normais
-PAGE_DELAY = 30    # espera entre páginas
+CACHE_FILE = "cache.json"
+CACHE_PARCIAL = "cache_parcial.json"
 
-LIMITE_REGISTROS_TURBO = 20000  # <<< só ativa os delays depois disso
+MAX_RETRIES = 20
+RETRY_DELAY = 30
+REQUEST_DELAY = 2
+PAGE_DELAY = 30
+LIMITE_REGISTROS_TURBO = 20000
+
+
+def carregar_parcial():
+    if os.path.exists(CACHE_PARCIAL):
+        with open(CACHE_PARCIAL, "r", encoding="utf-8") as f:
+            dados = json.load(f)
+        print(f"📁 Cache parcial carregado com {len(dados)} registros.")
+        return dados
+    return []
+
+def salvar_parcial(dados):
+    with open(CACHE_PARCIAL, "w", encoding="utf-8") as f:
+        json.dump(dados, f, ensure_ascii=False, indent=2)
+
+def salvar_cache_final(dados):
+    with open(CACHE_FILE, "w", encoding="utf-8") as f:
+        json.dump(dados, f, ensure_ascii=False, indent=2)
+    print(f"✅ Cache final salvo com {len(dados)} registros.")
 
 def baixar_todos_dados():
-    todos = []
+    todos = carregar_parcial()
     local_params = PARAMS.copy()
+    local_params["start"] = len(todos)  # retoma da posição
+
     tentativas = 0
 
     while True:
-        print(f"📡 Requisição com start={local_params.get('start')} (Registros: {len(todos)})")
+        print(f"📡 Requisição com start={local_params['start']} (Registros: {len(todos)})")
 
         try:
             resp = requests.get(BASE_URL, params=local_params, timeout=30)
@@ -32,7 +55,6 @@ def baixar_todos_dados():
         except Exception as e:
             print(f"❌ Erro: {e}")
             tentativas += 1
-
             if len(todos) >= LIMITE_REGISTROS_TURBO:
                 if tentativas >= MAX_RETRIES:
                     print("🚫 Máximo de tentativas atingido. Abortando.")
@@ -42,24 +64,24 @@ def baixar_todos_dados():
             else:
                 print("❌ Erro durante modo turbo. Abortando por segurança.")
                 break
-
             continue
 
-        tentativas = 0  # reset das tentativas se a requisição der certo
+        tentativas = 0  # reset em caso de sucesso
 
         deals = data.get("result", [])
         todos.extend(deals)
         print(f"✅ Recebidos: {len(deals)} | Total acumulado: {len(todos)}")
 
+        # salva parcial
+        salvar_parcial(todos)
+
         if 'next' in data and data['next']:
             local_params['start'] = data['next']
-
             if len(todos) >= LIMITE_REGISTROS_TURBO:
                 print(f"⏳ Modo cauteloso ativo. Aguardando {PAGE_DELAY}s...")
                 time.sleep(PAGE_DELAY)
             else:
                 print("🚀 Modo turbo ativo. Indo direto pra próxima página.")
-
         else:
             print("🏁 Fim da paginação.")
             break
@@ -69,11 +91,7 @@ def baixar_todos_dados():
 
     return todos
 
-def salvar_cache(dados):
-    with open("cache.json", "w", encoding="utf-8") as f:
-        json.dump(dados, f, ensure_ascii=False, indent=2)
 
 if __name__ == "__main__":
     dados = baixar_todos_dados()
-    salvar_cache(dados)
-    print(f"Cache salvo com {len(dados)} registros.")
+    salvar_cache_final(dados)
