@@ -35,11 +35,13 @@ def buscar_cep_unico(cep):
 
     for deal in dados:
         c = (deal.get("UF_CRM_1700661314351") or "").replace("-", "").strip()
+        contact = deal.get("UF_CRM_1698698407472")
         if c == cep:
             resultados.append({
                 "id_card": deal.get("ID"),
                 "cliente": deal.get("TITLE"),
                 "fase": deal.get("STAGE_ID"),
+                "contact": contact,
                 "cep": c,
                 "criado_em": deal.get("DATE_CREATE")
             })
@@ -54,11 +56,13 @@ def buscar_varios_ceps(lista_ceps):
 
     for deal in dados:
         c = (deal.get("UF_CRM_1700661314351") or "").replace("-", "").strip()
+        contact = deal.get("UF_CRM_1698698407472")
         if c in ceps_set:
             resultados.append({
                 "id_card": deal.get("ID"),
                 "cliente": deal.get("TITLE"),
                 "fase": deal.get("STAGE_ID"),
+                "contact": contact,
                 "cep": c,
                 "criado_em": deal.get("DATE_CREATE")
             })
@@ -79,7 +83,7 @@ async def buscar(cep: str = Form(None), arquivo: UploadFile = File(None)):
             if "error" in res:
                 output.write(f"Erro: {res['error']}\n")
             else:
-                output.write(f"ID: {res['id_card']} | Cliente: {res['cliente']} | Fase: {res['fase']} | CEP: {res['cep']} | Criado em: {res['criado_em']}\n")
+                output.write(f"ID: {res['id_card']} | Cliente: {res['cliente']} | Fase: {res['fase']} | CEP: {res['cep']} | Contato: {r['contact']} | Criado em: {res['criado_em']}\n")
         output.seek(0)
         return PlainTextResponse(content=output.read(), media_type='text/plain')
 
