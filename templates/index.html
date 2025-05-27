@@ -15,8 +15,14 @@
         <label class="block text-gray-700 font-semibold">Digite o CEP:</label>
         <input type="text" name="cep" class="border p-2 rounded w-full">
 
-        <label class="block text-gray-700 font-semibold">Ou envie um arquivo (.txt):</label>
-        <input type="file" name="arquivo" accept=".txt" class="border p-2 rounded w-full">
+        <label class="block text-gray-700 font-semibold">Ou envie um arquivo (.txt, .csv, .xlsx):</label>
+        <input type="file" name="arquivo" accept=".txt,.csv,.xlsx" class="border p-2 rounded w-full">
+
+        <label class="block text-gray-700 font-semibold">Formato de Download:</label>
+        <select name="formato" class="border p-2 rounded w-full">
+            <option value="txt">TXT</option>
+            <option value="xlsx">Excel</option>
+        </select>
 
         <button type="submit"
                 class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
@@ -72,11 +78,27 @@
                     resultadoDiv.innerHTML = "<p class='text-gray-600 text-center'>Nenhum card encontrado para esse CEP.</p>";
                 }
             } else {
-                const text = await response.text();
-                resultadoDiv.innerHTML = `
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">Resultado do Arquivo:</h2>
-                <pre class="bg-white border border-gray-300 p-4 rounded-lg whitespace-pre-wrap">${text}</pre>
-              `;
+                // Caso a resposta seja um arquivo (text ou excel), iniciar download automático
+                const blob = await response.blob();
+                const contentDisposition = response.headers.get('Content-Disposition');
+                let filename = 'resultado';
+
+                if (contentDisposition) {
+                    const match = contentDisposition.match(/filename="(.+)"/);
+                    if (match.length > 1) {
+                        filename = match[1];
+                    }
+                }
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+
+                resultadoDiv.innerHTML = `<p class="text-green-600 text-center">Download iniciado: ${filename}</p>`;
             }
         });
     </script>
