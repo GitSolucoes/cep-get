@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Form, UploadFile, File, Query
+from fastapi import FastAPI, Request, Form, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -6,75 +6,14 @@ import json
 import io
 import pandas as pd
 import os
-import requests
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 CACHE_PATH = "cache.json"
-BITRIX_URL = "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/"
 
-# Cache dinâmico
-CACHE_DINAMICO = {
-    "pipelines": {},
-    "etapas": {},
-    "campos": {}
-}
-
-# ---------------------- Bitrix API ----------------------
-
-def bitrix_get(method, params=None):
-    url = f"{BITRIX_URL}{method}"
-    response = requests.get(url, params=params)
-    response.raise_for_status()
-    return response.json()
-
-def get_pipelines():
-    params = {"entityTypeId": 2}
-    data = bitrix_get("crm.category.list", params)
-    categorias = data.get("result", {}).get("categories", [])
-    if not isinstance(categorias, list):
-        raise ValueError("A resposta da API não contém a chave 'categories' ou ela não é uma lista.")
-    return {str(cat["id"]): cat["name"] for cat in categorias}
-
-def get_etapas():
-    etapas = {}
-    params = {"entityTypeId": 2}
-    categorias = bitrix_get("crm.category.list", params).get("result", {}).get("categories", [])
-    for cat in categorias:
-        categoria_id = cat["id"]
-        entity_id = f"DEAL_STAGE_{categoria_id}"
-        status_params = {"filter[ENTITY_ID]": entity_id}
-        data = bitrix_get("crm.status.list", status_params)
-        for stage in data.get("result", []):
-            etapas[stage["STATUS_ID"]] = stage["NAME"]
-    return etapas
-
-def get_campos_personalizados():
-    data = bitrix_get("crm.deal.fields")
-    result = data.get("result", {})
-    return {k: v.get("title", k) for k, v in result.items() if k.startswith("UF_CRM")}
-
-def atualizar_cache_dinamico():
-    print("🔄 Atualizando cache dinâmico do Bitrix...")
-    CACHE_DINAMICO["pipelines"] = get_pipelines()
-    CACHE_DINAMICO["etapas"] = get_etapas()
-    CACHE_DINAMICO["campos"] = get_campos_personalizados()
-    print("✅ Cache dinâmico atualizado.")
-
-# ---------------------- Utilitários ----------------------
-
-def get_pipeline_nome(stage_id):
-    pipeline_code = stage_id.split(":")[0] if ":" in stage_id else stage_id
-    return CACHE_DINAMICO["pipelines"].get(pipeline_code, pipeline_code)
-
-def get_etapa_nome(stage_id):
-    return CACHE_DINAMICO["etapas"].get(stage_id, stage_id)
-
-def get_campo_legivel(nome_campo):
-    return CACHE_DINAMICO["campos"].get(nome_campo, nome_campo)
-
+# Função: carregar cache protegido contra erro
 def carregar_cache():
     if not os.path.exists(CACHE_PATH):
         return []
@@ -85,59 +24,7 @@ def carregar_cache():
         print("⚠️ ERRO: cache.json inválido ou corrompido.")
         return []
 
-async def extrair_ceps_arquivo(arquivo: UploadFile):
-    nome = arquivo.filename.lower()
-    conteudo = await arquivo.read()
-    ceps = []
-
-    if nome.endswith('.txt'):
-        ceps = conteudo.decode().splitlines()
-    elif nome.endswith('.csv'):
-        df = pd.read_csv(io.BytesIO(conteudo))
-        for col in df.columns:
-            if 'cep' in col.lower():
-                ceps = df[col].astype(str).tolist()
-                break
-    elif nome.endswith('.xlsx'):
-        df = pd.read_excel(io.BytesIO(conteudo))
-        for col in df.columns:
-            if 'cep' in col.lower():
-                ceps = df[col].astype(str).tolist()
-                break
-    return ceps
-
-def formatar_card(deal):
-    stage_id = deal.get("STAGE_ID", "")
-    pipeline_nome = get_pipeline_nome(stage_id)
-    etapa_nome = get_etapa_nome(stage_id)
-
-    card_formatado = {
-        "id_card": deal.get("ID"),
-        "cliente": deal.get("TITLE"),
-        "pipeline": pipeline_nome,
-        "etapa": etapa_nome,
-        "campos_preenchidos": {}
-    }
-
-    for campo, valor in deal.items():
-        if valor and campo.startswith("UF_CRM"):
-            nome_legivel = get_campo_legivel(campo)
-            card_formatado["campos_preenchidos"][nome_legivel] = valor
-
-    return card_formatado
-
-def buscar_varios_ceps(lista_ceps):
-    ceps_set = set(c.strip().replace("-", "") for c in lista_ceps if c.strip())
-    dados = carregar_cache()
-    resultados = []
-
-    for deal in dados:
-        c = (deal.get("UF_CRM_1700661314351") or "").replace("-", "").strip()
-        if c in ceps_set:
-            resultados.append(formatar_card(deal))
-
-    return resultados
-
+# Função: buscar por um único CEP
 def buscar_cep_unico(cep):
     cep = cep.replace("-", "").strip()
     dados = carregar_cache()
@@ -145,22 +32,74 @@ def buscar_cep_unico(cep):
 
     for deal in dados:
         c = (deal.get("UF_CRM_1700661314351") or "").replace("-", "").strip()
+        contato = deal.get("UF_CRM_1698698407472")
         if c == cep:
-            resultados.append(formatar_card(deal))
-
+            resultados.append({
+                "id_card": deal.get("ID"),
+                "cliente": deal.get("TITLE"),
+                "fase": deal.get("STAGE_ID"),
+                "contato": contato,
+                "cep": c,
+                "criado_em": deal.get("DATE_CREATE")
+            })
     return resultados
 
-# ---------------------- Rotas ----------------------
+# Função: buscar vários CEPs
+def buscar_varios_ceps(lista_ceps):
+    ceps_set = set(c.strip().replace("-", "") for c in lista_ceps if c.strip())
+    dados = carregar_cache()
+    resultados = []
 
+    for deal in dados:
+        c = (deal.get("UF_CRM_1700661314351") or "").replace("-", "").strip()
+        contato = deal.get("UF_CRM_1698698407472")
+        if c in ceps_set:
+            resultados.append({
+                "id_card": deal.get("ID"),
+                "cliente": deal.get("TITLE"),
+                "fase": deal.get("STAGE_ID"),
+                "contato": contato,
+                "cep": c,
+                "criado_em": deal.get("DATE_CREATE")
+            })
+    return resultados
+
+# Função: extrair CEPs de arquivo
+async def extrair_ceps_arquivo(arquivo: UploadFile):
+    nome = arquivo.filename.lower()
+    conteudo = await arquivo.read()
+    ceps = []
+
+    if nome.endswith('.txt'):
+        ceps = conteudo.decode().splitlines()
+
+    elif nome.endswith('.csv'):
+        df = pd.read_csv(io.BytesIO(conteudo))
+        for col in df.columns:
+            if 'cep' in col.lower():
+                ceps = df[col].astype(str).tolist()
+                break
+
+    elif nome.endswith('.xlsx'):
+        df = pd.read_excel(io.BytesIO(conteudo))
+        for col in df.columns:
+            if 'cep' in col.lower():
+                ceps = df[col].astype(str).tolist()
+                break
+
+    return ceps
+
+# Página inicial
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+# Rota de busca
 @app.post("/buscar")
 async def buscar(
     cep: str = Form(None),
     arquivo: UploadFile = File(None),
-    formato: str = Form("txt")
+    formato: str = Form("txt")  # novo parâmetro opcional para escolher formato
 ):
     if arquivo and arquivo.filename != "":
         ceps = await extrair_ceps_arquivo(arquivo)
@@ -175,10 +114,12 @@ async def buscar(
                 media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 filename="resultado.xlsx"
             )
-        else:
+        else:  # padrão: txt
             output = io.StringIO()
             for res in resultados:
-                output.write(f"ID: {res['id_card']} | Cliente: {res['cliente']} | Pipeline: {res['pipeline']} | Etapa: {res['etapa']} | Campos: {json.dumps(res['campos_preenchidos'])}\n")
+                output.write(
+                    f"ID: {res['id_card']} | Cliente: {res['cliente']} | Fase: {res['fase']} | CEP: {res['cep']} | Contato: {res['contato']} | Criado em: {res['criado_em']}\n"
+                )
             output.seek(0)
             return PlainTextResponse(content=output.read(), media_type='text/plain')
 
@@ -188,36 +129,3 @@ async def buscar(
 
     else:
         return JSONResponse(content={"error": "Nenhum CEP ou arquivo enviado."})
-
-@app.get("/consultar-etapa")
-async def consultar_etapa(pipeline: str = Query(...), etapa: str = Query(...)):
-    dados = carregar_cache()
-    resultados = []
-
-    for deal in dados:
-        stage_id = deal.get("STAGE_ID", "")
-        if get_pipeline_nome(stage_id).lower() == pipeline.lower() and get_etapa_nome(stage_id).lower() == etapa.lower():
-            resultados.append(formatar_card(deal))
-
-    return JSONResponse(content={"total": len(resultados), "resultados": resultados})
-
-@app.get("/relatorio-campos")
-async def relatorio_campos():
-    dados = carregar_cache()
-    relatorio = []
-
-    for deal in dados:
-        card = formatar_card(deal)
-        if card["campos_preenchidos"]:
-            relatorio.append(card)
-
-    return JSONResponse(content={"total": len(relatorio), "relatorio": relatorio})
-
-@app.post("/atualizar-cache-dinamico")
-async def atualizar_cache_endpoint():
-    atualizar_cache_dinamico()
-    return JSONResponse(content={"status": "Cache dinâmico atualizado."})
-
-# ---------------------- Inicialização ----------------------
-
-atualizar_cache_dinamico()
