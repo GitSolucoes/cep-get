@@ -5,11 +5,10 @@
     <title>Buscar Cards por CEP</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4 space-y-8">
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
 
     <img src="/static/preta_reta_azul (1).svg" alt="Logo" class="w-48 mb-6">
 
-    <!-- Consulta de CEP -->
     <form id="cep-form" class="bg-white p-6 rounded-lg shadow-lg space-y-4 w-full max-w-xl">
         <h1 class="text-2xl font-bold text-center text-gray-800">Consulta de CEPs</h1>
 
@@ -33,59 +32,61 @@
         <div id="carregando" class="hidden text-blue-500 font-medium text-center">Carregando...</div>
     </form>
 
-    <!-- Consulta por Pipeline + Etapa -->
-    <form id="etapa-form" class="bg-white p-6 rounded-lg shadow-lg space-y-4 w-full max-w-xl">
-        <h1 class="text-2xl font-bold text-center text-gray-800">Consultar por Pipeline e Etapa</h1>
-
-        <label class="block text-gray-700 font-semibold">Pipeline:</label>
-        <input type="text" name="pipeline" class="border p-2 rounded w-full" placeholder="Ex: Oportunidade Vero">
-
-        <label class="block text-gray-700 font-semibold">Etapa:</label>
-        <input type="text" name="etapa" class="border p-2 rounded w-full" placeholder="Ex: Negociar Planos">
-
-        <button type="submit"
-                class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-            Consultar
-        </button>
-    </form>
-
-    <!-- Relatório de Campos -->
-    <button id="relatorio-btn"
-            class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
-        Gerar Relatório de Campos Preenchidos
-    </button>
-
     <div id="resultado" class="mt-8 w-full max-w-2xl space-y-4"></div>
 
     <script>
-        const cepForm = document.getElementById('cep-form');
-        const etapaForm = document.getElementById('etapa-form');
-        const relatorioBtn = document.getElementById('relatorio-btn');
+        const form = document.getElementById('cep-form');
         const resultadoDiv = document.getElementById('resultado');
         const carregando = document.getElementById('carregando');
 
-        // Função genérica de fetch
-        async function fetchData(url, options = {}) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(form);
+
             resultadoDiv.innerHTML = '';
             carregando.classList.remove('hidden');
 
-            const response = await fetch(url, options);
+            const response = await fetch('/buscar', {
+                method: 'POST',
+                body: formData
+            });
 
             carregando.classList.add('hidden');
 
             const contentType = response.headers.get("content-type");
 
-            if (contentType && contentType.includes("application/json")) {
+            if (contentType.includes("application/json")) {
                 const data = await response.json();
-                resultadoDiv.innerHTML = `<pre class="bg-white border border-gray-300 p-4 rounded-lg whitespace-pre-wrap">${JSON.stringify(data, null, 2)}</pre>`;
+                if (data.resultados && data.resultados.length) {
+                    let html = '<h2 class="text-xl font-semibold text-gray-800 mb-4">Resultados:</h2>';
+                    html += '<div class="grid gap-4">';
+
+                    data.resultados.forEach(r => {
+                        html += `
+                        <div class="bg-white rounded-lg shadow p-4 border border-gray-200">
+                            <p><strong>ID:</strong> ${r.id_card}</p>
+                            <p><strong>Cliente:</strong> ${r.cliente}</p>
+                            <p><strong>Fase:</strong> ${r.fase}</p>
+                            <p><strong>Contato:</strong> ${r.contato}</p>
+                            <p><strong>CEP:</strong> ${r.cep}</p>
+                            <p><strong>Criado em:</strong> ${r.criado_em}</p>
+                        </div>`;
+                    });
+
+                    html += '</div>';
+                    resultadoDiv.innerHTML = html;
+                } else {
+                    resultadoDiv.innerHTML = "<p class='text-gray-600 text-center'>Nenhum card encontrado para esse CEP.</p>";
+                }
             } else {
+                // Caso a resposta seja um arquivo (text ou excel), iniciar download automático
                 const blob = await response.blob();
                 const contentDisposition = response.headers.get('Content-Disposition');
                 let filename = 'resultado';
 
                 if (contentDisposition) {
                     const match = contentDisposition.match(/filename="(.+)"/);
-                    if (match && match.length > 1) {
+                    if (match.length > 1) {
                         filename = match[1];
                     }
                 }
@@ -100,30 +101,6 @@
 
                 resultadoDiv.innerHTML = `<p class="text-green-600 text-center">Download iniciado: ${filename}</p>`;
             }
-        }
-
-        // Consulta CEP
-        cepForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(cepForm);
-            await fetchData('/buscar', {
-                method: 'POST',
-                body: formData
-            });
-        });
-
-        // Consulta por Pipeline + Etapa
-        etapaForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const pipeline = etapaForm.pipeline.value;
-            const etapa = etapaForm.etapa.value;
-            const url = `/consultar-etapa?pipeline=${encodeURIComponent(pipeline)}&etapa=${encodeURIComponent(etapa)}`;
-            await fetchData(url);
-        });
-
-        // Relatório de campos
-        relatorioBtn.addEventListener('click', async () => {
-            await fetchData('/relatorio-campos');
         });
     </script>
 </body>
