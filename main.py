@@ -32,13 +32,21 @@ def bitrix_get(method, params=None):
     return response.json()
 
 def get_pipelines():
-    data = bitrix_get("crm.pipeline.list")
-    return {item["ID"]: item["NAME"] for item in data.get("result", [])}
+    data = bitrix_get("crm.deal.category.list")
+    return {str(item["ID"]): item["NAME"] for item in data.get("result", [])}
 
 def get_etapas():
-    params = {"filter[ENTITY_ID]": "DEAL_STAGE"}
-    data = bitrix_get("crm.status.list", params)
-    return {item["ID"]: item["NAME"] for item in data.get("result", [])}
+    etapas = {}
+    # Primeiro pega as categorias (pipelines)
+    categorias = bitrix_get("crm.deal.category.list").get("result", [])
+    
+    for cat in categorias:
+        entity_type_id = cat["ID"]
+        params = {"entityTypeId": entity_type_id}
+        data = bitrix_get("crm.deal.stage.list", params)
+        for stage in data.get("result", []):
+            etapas[stage["STATUS_ID"]] = stage["NAME"]
+    
 
 def get_campos_personalizados():
     data = bitrix_get("crm.deal.fields")
