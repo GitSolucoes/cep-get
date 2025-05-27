@@ -34,14 +34,13 @@ def bitrix_get(method, params=None):
 
 
 def get_pipelines():
-    params = {"entityTypeId": 2}  # Para deals
+    params = {"entityTypeId": 2}
     data = bitrix_get("crm.category.list", params)
-    
-    # Exemplo para checar 'result' e lançar erro se não existir ou não for lista
+    print("DEBUG get_pipelines response:", data)  # Adicione esta linha
     if "result" not in data or not isinstance(data["result"], list):
         raise ValueError("A resposta da API não contém a chave 'result' ou ela não é uma lista.")
-    
     return {str(item["ID"]): item["NAME"] for item in data.get("result", [])}
+
 
 
 def get_etapas():
