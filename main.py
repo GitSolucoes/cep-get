@@ -33,15 +33,14 @@ def bitrix_get(method, params=None):
 
 
 def get_pipelines():
-    params = {"entityTypeId": 2}  # Para deals
+    params = {"entityTypeId": 2}  # Para negócios (deals)
     data = bitrix_get("crm.category.list", params)
 
-    # Ajuste: agora esperamos que 'result' seja um dicionário com a chave 'categories'
     categorias = data.get("result", {}).get("categories", [])
     if not isinstance(categorias, list):
         raise ValueError("A resposta da API não contém a chave 'categories' ou ela não é uma lista.")
-    
-    return {str(item["id"]): item["name"] for item in categorias}
+
+    return {str(cat["id"]): cat["name"] for cat in categorias}
 
 
 def get_etapas():
