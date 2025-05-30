@@ -29,7 +29,7 @@ def buscar_por_cep(cep):
     conn = get_conn()
     cur = conn.cursor()
     cur.execute("""
-        SELECT "title", "stage_id", "uf_crm_cep", "uf_crm_contato", "date_create"
+        SELECT "id", "title", "stage_id", "uf_crm_cep", "uf_crm_contato", "date_create"
         FROM deals
         WHERE REPLACE("uf_crm_cep", '-', '') = %s;
     """, (cep_limpo,))
@@ -40,11 +40,12 @@ def buscar_por_cep(cep):
     resultados = []
     for r in rows:
         resultados.append({
-            "cliente": r[0],
-            "fase": r[1],
-            "cep": r[2],
-            "contato": r[3],
-            "criado_em": r[4].isoformat() if hasattr(r[4], 'isoformat') else str(r[4])
+            "id_card": r[0],   # aqui está o ID!
+            "cliente": r[1],
+            "fase": r[2],
+            "cep": r[3],
+            "contato": r[4],
+            "criado_em": r[5].isoformat() if hasattr(r[5], 'isoformat') else str(r[5])
         })
     return resultados
 
