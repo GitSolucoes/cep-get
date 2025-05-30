@@ -15,8 +15,12 @@ PARAMS = {
     "start": 0
 }
 
-CACHE_FILE = "cache.json"
-CACHE_PARCIAL = "cache_parcial.json"
+CACHE_DIR = "cache"
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+CACHE_FILE = os.path.join(CACHE_DIR, "cache.json")
+CACHE_PARCIAL = os.path.join(CACHE_DIR, "cache_parcial.json")
+
 
 MAX_RETRIES = 20
 RETRY_DELAY = 30
