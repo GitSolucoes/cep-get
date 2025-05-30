@@ -35,10 +35,17 @@ def carregar_parcial():
     print("📁 Nenhum cache parcial encontrado. Iniciando do zero.")
     return []
 
+
 def salvar_parcial(dados):
     with open(CACHE_PARCIAL, "w", encoding="utf-8") as f:
         json.dump(dados, f, ensure_ascii=False, indent=2)
-    print(f"💾 Cache parcial salvo com {len(dados)} registros.")
+    # Já salva no final também
+    with open(CACHE_FILE, "w", encoding="utf-8") as f:
+        json.dump(dados, f, ensure_ascii=False, indent=2)
+    print(f"💾 Cache parcial e final salvo com {len(dados)} registros.")
+
+
+
 
 def salvar_cache_final(dados):
     with open(CACHE_FILE, "w", encoding="utf-8") as f:
