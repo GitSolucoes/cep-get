@@ -36,13 +36,15 @@ def get_conn():
     return psycopg2.connect(**DB_PARAMS)
 
 def upsert_deal(conn, deal):
+    """Insere ou atualiza um registro no banco."""
     with conn.cursor() as cur:
         cur.execute("""
-            INSERT INTO deals ("id", "title", "stage_id", "uf_crm_cep", "uf_crm_contato", "date_create")
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO deals ("id", "title", "stage_id", "category_id", "uf_crm_cep", "uf_crm_contato", "date_create")
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT ("id") DO UPDATE SET
                 "title" = EXCLUDED."title",
                 "stage_id" = EXCLUDED."stage_id",
+                "category_id" = EXCLUDED."category_id",
                 "uf_crm_cep" = EXCLUDED."uf_crm_cep",
                 "uf_crm_contato" = EXCLUDED."uf_crm_contato",
                 "date_create" = EXCLUDED."date_create";
@@ -50,12 +52,11 @@ def upsert_deal(conn, deal):
             deal.get("ID"),
             deal.get("TITLE"),
             deal.get("STAGE_ID"),
+            deal.get("CATEGORY_ID"),
             deal.get("UF_CRM_1700661314351"),
             deal.get("UF_CRM_1698698407472"),
             deal.get("DATE_CREATE")
         ))
-
-
 def fazer_requisicao(local_params):
     for webhook in WEBHOOKS:
         try:
