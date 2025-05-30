@@ -2,9 +2,11 @@ import psycopg2
 import requests
 import time
 import os
-import json
 
-# Parâmetros banco - ideal pegar do .env (use dotenv ou coloque direto aqui)
+from dotenv import load_dotenv
+load_dotenv()
+
+# Parâmetros banco
 DB_PARAMS = {
     "dbname": os.getenv("DB_NAME"),
     "user": os.getenv("DB_USER"),
@@ -35,7 +37,6 @@ def get_conn():
 
 def upsert_deal(conn, deal):
     with conn.cursor() as cur:
-        # Inserir ou atualizar pelo ID
         cur.execute("""
             INSERT INTO deals (id, title, stage_id, uf_crm_cep, uf_crm_contato, date_create)
             VALUES (%s, %s, %s, %s, %s, %s)
@@ -60,14 +61,14 @@ def fazer_requisicao(local_params):
             resp = requests.get(webhook, params=local_params, timeout=30)
             if resp.status_code == 429:
                 retry_after = int(resp.headers.get("Retry-After", 1))
-                print(f"⏳ Limite de requisições atingido para {webhook}. Aguardando {retry_after}s...")
+                print(f"⏳ Limite de requisições atingido: aguardando {retry_after}s...")
                 time.sleep(retry_after)
                 continue
             resp.raise_for_status()
-            print(f"✅ Requisição bem-sucedida com {webhook}")
+            print(f"✅ Sucesso com {webhook}")
             return resp.json()
         except Exception as e:
-            print(f"❌ Erro com webhook {webhook}: {e}")
+            print(f"❌ Erro com {webhook}: {e}")
             continue
     print("🚫 Todos os webhooks falharam.")
     return None
@@ -75,56 +76,42 @@ def fazer_requisicao(local_params):
 def baixar_todos_dados():
     conn = get_conn()
     conn.autocommit = False
-
     todos = []
     local_params = PARAMS.copy()
-    local_params["start"] = 0
-
     tentativas = 0
 
     while True:
-        print(f"📡 Requisição com start={local_params['start']} (Registros acumulados: {len(todos)})")
-
+        print(f"📡 Requisição start={local_params['start']} | Total acumulado: {len(todos)}")
         data = fazer_requisicao(local_params)
-
         if data is None:
             tentativas += 1
             if tentativas >= MAX_RETRIES:
-                print("🚫 Máximo de tentativas com todos os webhooks. Abortando.")
+                print("🚫 Máximo de tentativas. Abortando.")
                 break
-            print(f"⏳ Tentando novamente em {RETRY_DELAY}s (tentativa {tentativas}/{MAX_RETRIES})...")
+            print(f"⏳ Retentativa {tentativas}/{MAX_RETRIES} em {RETRY_DELAY}s...")
             time.sleep(RETRY_DELAY)
             continue
 
         tentativas = 0
-
         deals = data.get("result", [])
         todos.extend(deals)
-
         for deal in deals:
             upsert_deal(conn, deal)
 
         conn.commit()
-        print(f"💾 Inseridos/Atualizados {len(deals)} registros no banco.")
+        print(f"💾 Processados {len(deals)} registros.")
 
         if 'next' in data and data['next']:
             local_params['start'] = data['next']
-            if len(todos) >= LIMITE_REGISTROS_TURBO:
-                print(f"⏳ Modo cauteloso ativo. Aguardando {PAGE_DELAY}s...")
-                time.sleep(PAGE_DELAY)
-            else:
-                print("🚀 Modo turbo ativo. Indo direto pra próxima página.")
+            time.sleep(PAGE_DELAY if len(todos) >= LIMITE_REGISTROS_TURBO else REQUEST_DELAY)
         else:
             print("🏁 Fim da paginação.")
             break
-
-        if len(todos) >= LIMITE_REGISTROS_TURBO:
-            time.sleep(REQUEST_DELAY)
 
     conn.close()
     return todos
 
 if __name__ == "__main__":
-    print("🚀 Iniciando atualização no banco...")
+    print("🚀 Iniciando atualização...")
     baixar_todos_dados()
-    print("✅ Processo concluído com sucesso.")
+    print("✅ Finalizado.")
