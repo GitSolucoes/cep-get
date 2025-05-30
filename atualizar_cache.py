@@ -38,15 +38,23 @@ def get_conn():
 def upsert_deal(conn, deal):
     with conn.cursor() as cur:
         cur.execute("""
-            INSERT INTO deals ("title", "stage_id", "uf_crm_cep", "uf_crm_contato", "date_create")
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO deals ("id", "title", "stage_id", "uf_crm_cep", "uf_crm_contato", "date_create")
+            VALUES (%s, %s, %s, %s, %s, %s)
+            ON CONFLICT ("id") DO UPDATE SET
+                "title" = EXCLUDED."title",
+                "stage_id" = EXCLUDED."stage_id",
+                "uf_crm_cep" = EXCLUDED."uf_crm_cep",
+                "uf_crm_contato" = EXCLUDED."uf_crm_contato",
+                "date_create" = EXCLUDED."date_create";
         """, (
+            deal.get("ID"),
             deal.get("TITLE"),
             deal.get("STAGE_ID"),
             deal.get("UF_CRM_1700661314351"),
             deal.get("UF_CRM_1698698407472"),
             deal.get("DATE_CREATE")
-        ))    
+        ))
+
 
 def fazer_requisicao(local_params):
     for webhook in WEBHOOKS:
