@@ -1,7 +1,7 @@
 fastapi
-uvicorn
-requests
+uvicorn[standard]
 jinja2
-python-multipart
+python-dotenv
+psycopg2-binary
 pandas
 openpyxl
