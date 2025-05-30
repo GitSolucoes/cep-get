@@ -130,13 +130,8 @@ async def buscar(
                     filename="resultado.xlsx"
                 )
         else:
-            output = io.StringIO()
-            for res in resultados:
-                output.write(
-                    f"ID: {res['id']} | Cliente: {res['cliente']} | Fase: {res['fase']} | Categoria: {res['categoria']} | CEP: {res['cep']} | Contato: {res['contato']} | Criado em: {res['criado_em']}\n"
-                )
-            output.seek(0)
-            return PlainTextResponse(content=output.read(), media_type='text/plain')
+            # Aqui deve retornar JSON para o frontend montar os cards
+            return JSONResponse(content={"total": len(resultados), "resultados": resultados})
 
     elif cep:
         resultados = buscar_por_cep(cep)
