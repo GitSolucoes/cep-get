@@ -104,7 +104,12 @@ async def buscar(
 ):
     if arquivo and arquivo.filename != "":
         ceps = await extrair_ceps_arquivo(arquivo)
+        if not ceps:
+            return JSONResponse(content={"error": "Nenhum CEP encontrado no arquivo."}, status_code=400)
+
         resultados = buscar_varios_ceps(ceps)
+        if resultados is None:
+            resultados = []
 
         if formato == "xlsx":
             df = pd.DataFrame(resultados)
@@ -119,14 +124,16 @@ async def buscar(
             output = io.StringIO()
             for res in resultados:
                 output.write(
-                    f"ID: {res['id_card']} | Cliente: {res['cliente']} | Fase: {res['fase']} | CEP: {res['cep']} | Contato: {res['contato']} | Criado em: {res['criado_em']}\n"
+                    f"Cliente: {res['cliente']} | Fase: {res['fase']} | CEP: {res['cep']} | Contato: {res['contato']} | Criado em: {res['criado_em']}\n"
                 )
             output.seek(0)
             return PlainTextResponse(content=output.read(), media_type='text/plain')
 
     elif cep:
         resultados = buscar_por_cep(cep)
+        if resultados is None:
+            resultados = []
         return JSONResponse(content={"total": len(resultados), "resultados": resultados})
 
     else:
-        return JSONResponse(content={"error": "Nenhum CEP ou arquivo enviado."})
+        return JSONResponse(content={"error": "Nenhum CEP ou arquivo enviado."}, status_code=400)
