@@ -1,21 +1,22 @@
 from fastapi import FastAPI, Request, Form, UploadFile, File
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 import io
 import pandas as pd
 import psycopg2
 import os
 import tempfile
 from dotenv import load_dotenv
+import requests
 
-# Carrega variáveis de ambiente
 load_dotenv()
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+BITRIX_API_BASE = "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5"
 
 def get_conn():
     return psycopg2.connect(
@@ -25,6 +26,22 @@ def get_conn():
         host=os.getenv("DB_HOST"),
         port=os.getenv("DB_PORT")
     )
+
+def get_categories():
+    try:
+        resp = requests.get(f"{BITRIX_API_BASE}/crm.category.list", params={"entityTypeId": 2})
+        data = resp.json()
+        return {cat['id']: cat['name'] for cat in data.get('result', {}).get('categories', [])}
+    except:
+        return {}
+
+def get_stages(category_id):
+    try:
+        resp = requests.get(f"{BITRIX_API_BASE}/crm.dealcategory.stage.list", params={"id": category_id})
+        data = resp.json()
+        return {stage['STATUS_ID']: stage['NAME'] for stage in data.get('result', [])}
+    except:
+        return {}
 
 def buscar_por_cep(cep):
     cep_limpo = cep.replace("-", "").strip()
@@ -37,19 +54,30 @@ def buscar_por_cep(cep):
             """, (cep_limpo,))
             rows = cur.fetchall()
 
+    # Carrega categorias e inicializa cache stages
+    categorias = get_categories()
+    stages_cache = {}
+
     resultados = []
     for r in rows:
+        cat_id = r[3]
+        categoria_nome = categorias.get(cat_id, str(cat_id))
+
+        # Carrega estágios da categoria (cache)
+        if cat_id not in stages_cache:
+            stages_cache[cat_id] = get_stages(cat_id)
+        fase_nome = stages_cache[cat_id].get(r[2], r[2])  # r[2] é stage_id
+
         resultados.append({
             "id": r[0],
             "cliente": r[1],
-            "fase": r[2],
-            "categoria": r[3],  # chave alterada para "categoria"
+            "fase": fase_nome,
+            "categoria": categoria_nome,
             "cep": r[4],
             "contato": r[5],
             "criado_em": r[6].isoformat() if hasattr(r[6], 'isoformat') else str(r[6])
         })
-    return resultados  # não esquece do return
-
+    return resultados
 
 def buscar_varios_ceps(lista_ceps):
     ceps_limpos = [c.replace("-", "").strip() for c in lista_ceps if c.strip()]
@@ -62,20 +90,28 @@ def buscar_varios_ceps(lista_ceps):
             """, (ceps_limpos,))
             rows = cur.fetchall()
 
+    categorias = get_categories()
+    stages_cache = {}
+
     resultados = []
     for r in rows:
+        cat_id = r[3]
+        categoria_nome = categorias.get(cat_id, str(cat_id))
+
+        if cat_id not in stages_cache:
+            stages_cache[cat_id] = get_stages(cat_id)
+        fase_nome = stages_cache[cat_id].get(r[2], r[2])
+
         resultados.append({
             "id": r[0],
             "cliente": r[1],
-            "fase": r[2],
-            "categoria": r[3],  # chave alterada para "categoria"
+            "fase": fase_nome,
+            "categoria": categoria_nome,
             "cep": r[4],
             "contato": r[5],
             "criado_em": r[6].isoformat() if hasattr(r[6], 'isoformat') else str(r[6])
         })
     return resultados
-
-
 
 async def extrair_ceps_arquivo(arquivo: UploadFile):
     nome = arquivo.filename.lower()
@@ -102,7 +138,6 @@ async def extrair_ceps_arquivo(arquivo: UploadFile):
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-
 @app.post("/buscar")
 async def buscar(
     cep: str = Form(None),
@@ -115,7 +150,7 @@ async def buscar(
     if arquivo and arquivo.filename != "":
         ceps = await extrair_ceps_arquivo(arquivo)
         if not ceps:
-            return JSONResponse(content={"error": "Nenhum CEP encontrado no arquivo. Certifique-se de que o arquivo contém uma coluna ou linhas com CEPs."}, status_code=400)
+            return JSONResponse(content={"error": "Nenhum CEP encontrado no arquivo."}, status_code=400)
 
         resultados = buscar_varios_ceps(ceps)
         if not resultados:
