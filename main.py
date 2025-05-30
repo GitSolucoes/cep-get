@@ -28,9 +28,9 @@ def buscar_por_cep(cep):
     conn = get_conn()
     cur = conn.cursor()
     cur.execute("""
-        SELECT title, stage_id, uf_crm_cep, "UF_CRM_CONTATO_DATE_CREATE"
+        SELECT "title", "stage_id", "uf_crm_cep", "uf_crm_contato", "date_create"
         FROM deals
-        WHERE uf_crm_cep = %s;
+        WHERE "uf_crm_cep" = %s;
     """, (cep.replace("-", "").strip(),))
     rows = cur.fetchall()
     cur.close()
@@ -42,7 +42,8 @@ def buscar_por_cep(cep):
             "cliente": r[0],
             "fase": r[1],
             "cep": r[2],
-            "contato_criado_em": r[3].isoformat() if hasattr(r[3], 'isoformat') else str(r[3])
+            "contato": r[3],
+            "criado_em": r[4].isoformat() if hasattr(r[4], 'isoformat') else str(r[4])
         })
     return resultados
 
@@ -51,12 +52,11 @@ def buscar_varios_ceps(lista_ceps):
     ceps_limpos = [c.replace("-", "").strip() for c in lista_ceps if c.strip()]
     conn = get_conn()
     cur = conn.cursor()
-    sql = """
-        SELECT id, title, stage_id, uf_crm_cep, uf_crm_contato, date_create
+    cur.execute("""
+        SELECT "title", "stage_id", "uf_crm_cep", "uf_crm_contato", "date_create"
         FROM deals
-        WHERE uf_crm_cep = ANY(%s);
-    """
-    cur.execute(sql, (ceps_limpos,))
+        WHERE "uf_crm_cep" = ANY(%s);
+    """, (ceps_limpos,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -64,15 +64,13 @@ def buscar_varios_ceps(lista_ceps):
     resultados = []
     for r in rows:
         resultados.append({
-            "id_card": r[0],
-            "cliente": r[1],
-            "fase": r[2],
-            "cep": r[3],
-            "contato": r[4],
-            "criado_em": r[5].isoformat()
+            "cliente": r[0],
+            "fase": r[1],
+            "cep": r[2],
+            "contato": r[3],
+            "criado_em": r[4].isoformat() if hasattr(r[4], 'isoformat') else str(r[4])
         })
     return resultados
-
 async def extrair_ceps_arquivo(arquivo: UploadFile):
     nome = arquivo.filename.lower()
     conteudo = await arquivo.read()
