@@ -21,7 +21,7 @@ WEBHOOKS = [
 ]
 
 PARAMS = {
-    "select[]": ["ID", "TITLE", "STAGE_ID", "UF_CRM_1700661314351", "UF_CRM_1698698407472", "DATE_CREATE"],
+    "select[]": ["ID", "TITLE", "STAGE_ID", "CATEGORY_ID", "UF_CRM_1700661314351", "UF_CRM_1698698407472", "DATE_CREATE"],
     "filter[>=DATE_CREATE]": "2023-11-01",
     "start": 0
 }
