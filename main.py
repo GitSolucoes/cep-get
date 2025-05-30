@@ -2,69 +2,78 @@ from fastapi import FastAPI, Request, Form, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import json
 import io
 import pandas as pd
+import psycopg2
 import os
+from dotenv import load_dotenv
+
+# Carrega .env
+load_dotenv()
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-CACHE_PATH = "cache/cache.json"
+def get_conn():
+    return psycopg2.connect(
+        dbname=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT")
+    )
 
-# Função: carregar cache protegido contra erro
-def carregar_cache():
-    if not os.path.exists(CACHE_PATH):
-        return []
-    try:
-        with open(CACHE_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except json.JSONDecodeError:
-        print("⚠️ ERRO: cache.json inválido ou corrompido.")
-        return []
+def buscar_por_cep(cep):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        SELECT id, title, stage_id, uf_crm_cep, uf_crm_contato, date_create
+        FROM deals
+        WHERE uf_crm_cep = %s;
+    """, (cep.replace("-", "").strip(),))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
 
-# Função: buscar por um único CEP
-def buscar_cep_unico(cep):
-    cep = cep.replace("-", "").strip()
-    dados = carregar_cache()
     resultados = []
-
-    for deal in dados:
-        c = (deal.get("UF_CRM_1700661314351") or "").replace("-", "").strip()
-        contato = deal.get("UF_CRM_1698698407472")
-        if c == cep:
-            resultados.append({
-                "id_card": deal.get("ID"),
-                "cliente": deal.get("TITLE"),
-                "fase": deal.get("STAGE_ID"),
-                "contato": contato,
-                "cep": c,
-                "criado_em": deal.get("DATE_CREATE")
-            })
+    for r in rows:
+        resultados.append({
+            "id_card": r[0],
+            "cliente": r[1],
+            "fase": r[2],
+            "cep": r[3],
+            "contato": r[4],
+            "criado_em": r[5].isoformat()
+        })
     return resultados
 
-# Função: buscar vários CEPs
 def buscar_varios_ceps(lista_ceps):
-    ceps_set = set(c.strip().replace("-", "") for c in lista_ceps if c.strip())
-    dados = carregar_cache()
-    resultados = []
+    ceps_limpos = [c.replace("-", "").strip() for c in lista_ceps if c.strip()]
+    conn = get_conn()
+    cur = conn.cursor()
+    sql = """
+        SELECT id, title, stage_id, uf_crm_cep, uf_crm_contato, date_create
+        FROM deals
+        WHERE uf_crm_cep = ANY(%s);
+    """
+    cur.execute(sql, (ceps_limpos,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
 
-    for deal in dados:
-        c = (deal.get("UF_CRM_1700661314351") or "").replace("-", "").strip()
-        contato = deal.get("UF_CRM_1698698407472")
-        if c in ceps_set:
-            resultados.append({
-                "id_card": deal.get("ID"),
-                "cliente": deal.get("TITLE"),
-                "fase": deal.get("STAGE_ID"),
-                "contato": contato,
-                "cep": c,
-                "criado_em": deal.get("DATE_CREATE")
-            })
+    resultados = []
+    for r in rows:
+        resultados.append({
+            "id_card": r[0],
+            "cliente": r[1],
+            "fase": r[2],
+            "cep": r[3],
+            "contato": r[4],
+            "criado_em": r[5].isoformat()
+        })
     return resultados
 
-# Função: extrair CEPs de arquivo
 async def extrair_ceps_arquivo(arquivo: UploadFile):
     nome = arquivo.filename.lower()
     conteudo = await arquivo.read()
@@ -72,34 +81,29 @@ async def extrair_ceps_arquivo(arquivo: UploadFile):
 
     if nome.endswith('.txt'):
         ceps = conteudo.decode().splitlines()
-
     elif nome.endswith('.csv'):
         df = pd.read_csv(io.BytesIO(conteudo))
         for col in df.columns:
             if 'cep' in col.lower():
                 ceps = df[col].astype(str).tolist()
                 break
-
     elif nome.endswith('.xlsx'):
         df = pd.read_excel(io.BytesIO(conteudo))
         for col in df.columns:
             if 'cep' in col.lower():
                 ceps = df[col].astype(str).tolist()
                 break
-
     return ceps
 
-# Página inicial
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-# Rota de busca
 @app.post("/buscar")
 async def buscar(
     cep: str = Form(None),
     arquivo: UploadFile = File(None),
-    formato: str = Form("txt")  # novo parâmetro opcional para escolher formato
+    formato: str = Form("txt")
 ):
     if arquivo and arquivo.filename != "":
         ceps = await extrair_ceps_arquivo(arquivo)
@@ -114,7 +118,7 @@ async def buscar(
                 media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                 filename="resultado.xlsx"
             )
-        else:  # padrão: txt
+        else:
             output = io.StringIO()
             for res in resultados:
                 output.write(
@@ -124,7 +128,7 @@ async def buscar(
             return PlainTextResponse(content=output.read(), media_type='text/plain')
 
     elif cep:
-        resultados = buscar_cep_unico(cep)
+        resultados = buscar_por_cep(cep)
         return JSONResponse(content={"total": len(resultados), "resultados": resultados})
 
     else:
