@@ -49,6 +49,7 @@ def buscar_por_cep(cep):
         })
     return resultados  # não esquece do return
 
+
 def buscar_varios_ceps(lista_ceps):
     ceps_limpos = [c.replace("-", "").strip() for c in lista_ceps if c.strip()]
     with get_conn() as conn:
@@ -72,6 +73,8 @@ def buscar_varios_ceps(lista_ceps):
             "criado_em": r[6].isoformat() if hasattr(r[6], 'isoformat') else str(r[6])
         })
     return resultados
+
+
 
 async def extrair_ceps_arquivo(arquivo: UploadFile):
     nome = arquivo.filename.lower()
@@ -127,8 +130,13 @@ async def buscar(
                     filename="resultado.xlsx"
                 )
         else:
-            # RETORNA JSON PARA O FRONTEND EXIBIR OS CARDS
-            return JSONResponse(content={"total": len(resultados), "resultados": resultados})
+            output = io.StringIO()
+            for res in resultados:
+                output.write(
+                    f"ID: {res['id']} | Cliente: {res['cliente']} | Fase: {res['fase']} | Categoria: {res['categoria']} | CEP: {res['cep']} | Contato: {res['contato']} | Criado em: {res['criado_em']}\n"
+                )
+            output.seek(0)
+            return PlainTextResponse(content=output.read(), media_type='text/plain')
 
     elif cep:
         resultados = buscar_por_cep(cep)
