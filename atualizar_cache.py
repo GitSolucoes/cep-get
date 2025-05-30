@@ -93,6 +93,14 @@ def baixar_todos_dados():
     local_params = PARAMS.copy()
     tentativas = 0
 
+    print("🚀 Buscando categorias para mapear nomes...")
+    categorias = get_categories()
+
+    print("🚀 Buscando estágios para todas as categorias...")
+    estagios_por_categoria = {}
+    for cat_id in categorias.keys():
+        estagios_por_categoria[cat_id] = get_stages(cat_id)
+
     while True:
         print(f"📡 Requisição start={local_params['start']} | Total acumulado: {len(todos)}")
         data = fazer_requisicao(WEBHOOKS, local_params)
@@ -107,10 +115,21 @@ def baixar_todos_dados():
 
         tentativas = 0
         deals = data.get("result", [])
-        todos.extend(deals)
+        
+        # Substituir IDs por nomes antes de salvar:
         for deal in deals:
+            cat_id = deal.get("CATEGORY_ID")
+            stage_id = deal.get("STAGE_ID")
+            # substitui categoria pelo nome, se existir
+            if cat_id in categorias:
+                deal["CATEGORY_ID"] = categorias[cat_id]
+            # substitui estágio pelo nome, se existir
+            if cat_id in estagios_por_categoria and stage_id in estagios_por_categoria[cat_id]:
+                deal["STAGE_ID"] = estagios_por_categoria[cat_id][stage_id]
+
             upsert_deal(conn, deal)
 
+        todos.extend(deals)
         conn.commit()
         print(f"💾 Processados {len(deals)} registros.")
 
@@ -124,51 +143,7 @@ def baixar_todos_dados():
     conn.close()
     return todos
 
-def get_categories():
-    params = {"start": 0}
-    categories = {}
-    while True:
-        data = fazer_requisicao(WEBHOOK_CATEGORIES, params)
-        if data is None:
-            break
-        for cat in data.get("result", []):
-            categories[cat["ID"]] = cat["NAME"]
-        if 'next' in data and data['next']:
-            params['start'] = data['next']
-        else:
-            break
-    return categories
-
-def get_stages(category_id):
-    params = {
-        "filter[CATEGORY_ID]": category_id,
-        "start": 0
-    }
-    stages = {}
-    while True:
-        data = fazer_requisicao(WEBHOOK_STAGES, params)
-        if data is None:
-            break
-        for stage in data.get("result", []):
-            stages[stage["STATUS_ID"]] = stage["NAME"]
-        if 'next' in data and data['next']:
-            params['start'] = data['next']
-        else:
-            break
-    return stages
-
 if __name__ == "__main__":
     print("🚀 Iniciando atualização dos deals...")
     baixar_todos_dados()
     print("✅ Deals atualizados.")
-
-    print("🚀 Buscando categorias...")
-    categorias = get_categories()
-    print(f"✅ {len(categorias)} categorias encontradas.")
-
-    # Exemplo: buscar stages da primeira categoria
-    if categorias:
-        primeira_categoria = list(categorias.keys())[0]
-        print(f"🚀 Buscando estágios da categoria {primeira_categoria}...")
-        estagios = get_stages(primeira_categoria)
-        print(f"✅ {len(estagios)} estágios encontrados.")
