@@ -25,13 +25,14 @@ def get_conn():
     )
 
 def buscar_por_cep(cep):
+    cep_limpo = cep.replace("-", "").strip()
     conn = get_conn()
     cur = conn.cursor()
     cur.execute("""
         SELECT "title", "stage_id", "uf_crm_cep", "uf_crm_contato", "date_create"
         FROM deals
-        WHERE "uf_crm_cep" = %s;
-    """, (cep.replace("-", "").strip(),))
+        WHERE REPLACE("uf_crm_cep", '-', '') = %s;
+    """, (cep_limpo,))
     rows = cur.fetchall()
     cur.close()
     conn.close()
@@ -46,7 +47,6 @@ def buscar_por_cep(cep):
             "criado_em": r[4].isoformat() if hasattr(r[4], 'isoformat') else str(r[4])
         })
     return resultados
-
 
 def buscar_varios_ceps(lista_ceps):
     ceps_limpos = [c.replace("-", "").strip() for c in lista_ceps if c.strip()]
