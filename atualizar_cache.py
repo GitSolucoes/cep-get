@@ -36,7 +36,6 @@ def get_conn():
     return psycopg2.connect(**DB_PARAMS)
 
 def upsert_deal(conn, deal):
-    print("Debug do deal:", deal)  # Veja tudo que está vindo
     with conn.cursor() as cur:
         cur.execute("""
             INSERT INTO deals ("id", "title", "stage_id", "category_id", "uf_crm_cep", "uf_crm_contato", "date_create")
