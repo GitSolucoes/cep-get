@@ -27,8 +27,8 @@ WEBHOOK_CATEGORIES = [
 ]
 
 WEBHOOK_STAGES = [
-    "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/crm.dealstage.list",
-    "https://marketingsolucoes.bitrix24.com.br/rest/5332/y5q6wd4evy5o57ze/crm.dealstage.list"
+    "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/crm.dealcategory.stage.list",
+    "https://marketingsolucoes.bitrix24.com.br/rest/5332/y5q6wd4evy5o57ze/crm.dealcategory.stage.list"
 ]
 
 PARAMS = {
@@ -101,23 +101,30 @@ def get_categories():
             break
     return categories
 
+
+
 def get_stages(category_id):
     params = {
-        "filter[CATEGORY_ID]": category_id,
+        "id": category_id,
         "start": 0
     }
     stages = {}
     while True:
         data = fazer_requisicao(WEBHOOK_STAGES, params)
         if data is None:
+            print(f"🚫 Falha ao obter estágios para categoria {category_id}")
             break
-        for stage in data.get("result", []):
+
+        result = data.get("result", {})
+        for stage in result.get("stages", []):
             stages[stage["STATUS_ID"]] = stage["NAME"]
-        if 'next' in data and data['next']:
-            params['start'] = data['next']
+
+        if "next" in result and result["next"]:
+            params["start"] = result["next"]
         else:
             break
     return stages
+
 
 def baixar_todos_dados():
     conn = get_conn()
