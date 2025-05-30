@@ -20,6 +20,17 @@ WEBHOOKS = [
     "https://marketingsolucoes.bitrix24.com.br/rest/5332/y5q6wd4evy5o57ze/crm.deal.list"
 ]
 
+# Webhooks para pegar categorias e estágios (ajuste se necessário)
+WEBHOOK_CATEGORIES = [
+    "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/crm.dealcategory.list",
+    "https://marketingsolucoes.bitrix24.com.br/rest/5332/y5q6wd4evy5o57ze/crm.dealcategory.list"
+]
+
+WEBHOOK_STAGES = [
+    "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/crm.dealstage.list",
+    "https://marketingsolucoes.bitrix24.com.br/rest/5332/y5q6wd4evy5o57ze/crm.dealstage.list"
+]
+
 PARAMS = {
     "select[]": ["ID", "TITLE", "STAGE_ID", "CATEGORY_ID", "UF_CRM_1700661314351", "UF_CRM_1698698407472", "DATE_CREATE"],
     "filter[>=DATE_CREATE]": "2023-11-01",
@@ -57,10 +68,10 @@ def upsert_deal(conn, deal):
             deal.get("DATE_CREATE")
         ))
 
-def fazer_requisicao(local_params):
-    for webhook in WEBHOOKS:
+def fazer_requisicao(webhooks, params):
+    for webhook in webhooks:
         try:
-            resp = requests.get(webhook, params=local_params, timeout=30)
+            resp = requests.get(webhook, params=params, timeout=30)
             if resp.status_code == 429:
                 retry_after = int(resp.headers.get("Retry-After", 1))
                 print(f"⏳ Limite de requisições atingido: aguardando {retry_after}s...")
@@ -84,7 +95,7 @@ def baixar_todos_dados():
 
     while True:
         print(f"📡 Requisição start={local_params['start']} | Total acumulado: {len(todos)}")
-        data = fazer_requisicao(local_params)
+        data = fazer_requisicao(WEBHOOKS, local_params)
         if data is None:
             tentativas += 1
             if tentativas >= MAX_RETRIES:
@@ -113,7 +124,51 @@ def baixar_todos_dados():
     conn.close()
     return todos
 
+def get_categories():
+    params = {"start": 0}
+    categories = {}
+    while True:
+        data = fazer_requisicao(WEBHOOK_CATEGORIES, params)
+        if data is None:
+            break
+        for cat in data.get("result", []):
+            categories[cat["ID"]] = cat["NAME"]
+        if 'next' in data and data['next']:
+            params['start'] = data['next']
+        else:
+            break
+    return categories
+
+def get_stages(category_id):
+    params = {
+        "filter[CATEGORY_ID]": category_id,
+        "start": 0
+    }
+    stages = {}
+    while True:
+        data = fazer_requisicao(WEBHOOK_STAGES, params)
+        if data is None:
+            break
+        for stage in data.get("result", []):
+            stages[stage["STATUS_ID"]] = stage["NAME"]
+        if 'next' in data and data['next']:
+            params['start'] = data['next']
+        else:
+            break
+    return stages
+
 if __name__ == "__main__":
-    print("🚀 Iniciando atualização...")
+    print("🚀 Iniciando atualização dos deals...")
     baixar_todos_dados()
-    print("✅ Finalizado.")
+    print("✅ Deals atualizados.")
+
+    print("🚀 Buscando categorias...")
+    categorias = get_categories()
+    print(f"✅ {len(categorias)} categorias encontradas.")
+
+    # Exemplo: buscar stages da primeira categoria
+    if categorias:
+        primeira_categoria = list(categorias.keys())[0]
+        print(f"🚀 Buscando estágios da categoria {primeira_categoria}...")
+        estagios = get_stages(primeira_categoria)
+        print(f"✅ {len(estagios)} estágios encontrados.")
