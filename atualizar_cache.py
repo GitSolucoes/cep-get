@@ -20,7 +20,7 @@ WEBHOOKS = [
     "https://marketingsolucoes.bitrix24.com.br/rest/5332/y5q6wd4evy5o57ze/crm.deal.list"
 ]
 
-# Webhooks para pegar categorias e estágios (ajuste se necessário)
+# Webhooks para pegar categorias e estágios
 WEBHOOK_CATEGORIES = [
     "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/crm.dealcategory.list",
     "https://marketingsolucoes.bitrix24.com.br/rest/5332/y5q6wd4evy5o57ze/crm.dealcategory.list"
@@ -86,6 +86,39 @@ def fazer_requisicao(webhooks, params):
     print("🚫 Todos os webhooks falharam.")
     return None
 
+def get_categories():
+    params = {"start": 0}
+    categories = {}
+    while True:
+        data = fazer_requisicao(WEBHOOK_CATEGORIES, params)
+        if data is None:
+            break
+        for cat in data.get("result", []):
+            categories[cat["ID"]] = cat["NAME"]
+        if 'next' in data and data['next']:
+            params['start'] = data['next']
+        else:
+            break
+    return categories
+
+def get_stages(category_id):
+    params = {
+        "filter[CATEGORY_ID]": category_id,
+        "start": 0
+    }
+    stages = {}
+    while True:
+        data = fazer_requisicao(WEBHOOK_STAGES, params)
+        if data is None:
+            break
+        for stage in data.get("result", []):
+            stages[stage["STATUS_ID"]] = stage["NAME"]
+        if 'next' in data and data['next']:
+            params['start'] = data['next']
+        else:
+            break
+    return stages
+
 def baixar_todos_dados():
     conn = get_conn()
     conn.autocommit = False
@@ -120,10 +153,10 @@ def baixar_todos_dados():
         for deal in deals:
             cat_id = deal.get("CATEGORY_ID")
             stage_id = deal.get("STAGE_ID")
-            # substitui categoria pelo nome, se existir
+            # Substitui categoria pelo nome, se existir
             if cat_id in categorias:
                 deal["CATEGORY_ID"] = categorias[cat_id]
-            # substitui estágio pelo nome, se existir
+            # Substitui estágio pelo nome, se existir
             if cat_id in estagios_por_categoria and stage_id in estagios_por_categoria[cat_id]:
                 deal["STAGE_ID"] = estagios_por_categoria[cat_id][stage_id]
 
