@@ -42,12 +42,11 @@ def buscar_por_cep(cep):
             "id": r[0],
             "cliente": r[1],
             "fase": r[2],
-            "categoria": r[3],
+            "category_id": r[3],  # troca "categoria" por "category_id"
             "cep": r[4],
             "contato": r[5],
             "criado_em": r[6].isoformat() if hasattr(r[6], 'isoformat') else str(r[6])
         })
-    return resultados
 
 def buscar_varios_ceps(lista_ceps):
     ceps_limpos = [c.replace("-", "").strip() for c in lista_ceps if c.strip()]
@@ -66,7 +65,7 @@ def buscar_varios_ceps(lista_ceps):
             "id": r[0],
             "cliente": r[1],
             "fase": r[2],
-            "categoria": r[3],
+            "category_id": r[3],  # troca "categoria" por "category_id"
             "cep": r[4],
             "contato": r[5],
             "criado_em": r[6].isoformat() if hasattr(r[6], 'isoformat') else str(r[6])
