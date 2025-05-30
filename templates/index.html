@@ -60,19 +60,18 @@
                 if (data.resultados && data.resultados.length) {
                     let html = '<h2 class="text-xl font-semibold text-gray-800 mb-4">Resultados:</h2>';
                     html += '<div class="grid gap-4">';
-                    data.resultados.forEach(r => {
-                        html += `
-                        <div class="bg-white rounded-lg shadow p-4 border border-gray-200">
-                            <p><strong>ID:</strong> ${r.id_card}</p>
-                            <p><strong>Cliente:</strong> ${r.cliente}</p>
-                            <p><strong>Fase:</strong> ${r.fase}</p>
-                            <p><strong>Category ID:</strong> ${r.category_id}</p>  <!-- NOVO -->
-                            <p><strong>Contato:</strong> ${r.contato}</p>
-                            <p><strong>CEP:</strong> ${r.cep}</p>
-                            <p><strong>Criado em:</strong> ${r.criado_em}</p>
-                        </div>`;
-                    });
-
+                        data.resultados.forEach(r => {
+                            html += `
+                            <div class="bg-white rounded-lg shadow p-4 border border-gray-200">
+                                <p><strong>ID:</strong> ${r.id}</p>
+                                <p><strong>Cliente:</strong> ${r.cliente}</p>
+                                <p><strong>Fase:</strong> ${r.fase}</p>
+                                <p><strong>Categoria:</strong> ${r.categoria}</p>
+                                <p><strong>Contato:</strong> ${r.contato}</p>
+                                <p><strong>CEP:</strong> ${r.cep}</p>
+                                <p><strong>Criado em:</strong> ${r.criado_em}</p>
+                            </div>`;
+                        });
                     html += '</div>';
                     resultadoDiv.innerHTML = html;
                 } else {
