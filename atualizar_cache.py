@@ -125,6 +125,9 @@ def get_stages(category_id):
             break
     return stages
 
+
+
+
 def baixar_todos_dados():
     conn = get_conn()
     conn.autocommit = False
