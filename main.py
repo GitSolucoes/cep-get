@@ -29,7 +29,7 @@ def buscar_por_cep(cep):
     conn = get_conn()
     cur = conn.cursor()
     cur.execute("""
-        SELECT "title", "stage_id", "uf_crm_cep", "uf_crm_contato", "date_create"
+        SELECT "id", "title", "stage_id", "category_id", "uf_crm_cep", "uf_crm_contato", "date_create"
         FROM deals
         WHERE replace("uf_crm_cep", '-', '') = %s;
     """, (cep.replace("-", "").strip(),))
