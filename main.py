@@ -11,7 +11,7 @@ app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-CACHE_PATH = "cache.json"
+CACHE_PATH = "cache/cache.json"
 
 # Função: carregar cache protegido contra erro
 def carregar_cache():
