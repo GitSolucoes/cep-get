@@ -101,6 +101,7 @@ async def extrair_ceps_arquivo(arquivo: UploadFile):
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+
 @app.post("/buscar")
 async def buscar(
     cep: str = Form(None),
@@ -130,8 +131,18 @@ async def buscar(
                     filename="resultado.xlsx"
                 )
         else:
-            # Aqui deve retornar JSON para o frontend montar os cards
-            return JSONResponse(content={"total": len(resultados), "resultados": resultados})
+            output = io.StringIO()
+            for res in resultados:
+                output.write(
+                    f"ID: {res['id']} | Cliente: {res['cliente']} | Fase: {res['fase']} | Categoria: {res['categoria']} | CEP: {res['cep']} | Contato: {res['contato']} | Criado em: {res['criado_em']}\n"
+                )
+            output.seek(0)
+
+            headers = {
+                'Content-Disposition': 'attachment; filename="resultado.txt"'
+            }
+
+            return StreamingResponse(output, media_type='text/plain', headers=headers)
 
     elif cep:
         resultados = buscar_por_cep(cep)
