@@ -6,9 +6,10 @@ import io
 import pandas as pd
 import psycopg2
 import os
+import tempfile
 from dotenv import load_dotenv
 
-# Carrega .env
+# Carrega variáveis de ambiente
 load_dotenv()
 
 app = FastAPI()
@@ -26,52 +27,52 @@ def get_conn():
 
 def buscar_por_cep(cep):
     cep_limpo = cep.replace("-", "").strip()
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT "id", "title", "stage_id", "category_id", "uf_crm_cep", "uf_crm_contato", "date_create"
-        FROM deals
-        WHERE replace("uf_crm_cep", '-', '') = %s;
-    """, (cep.replace("-", "").strip(),))
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT "id", "title", "stage_id", "category_id", "uf_crm_cep", "uf_crm_contato", "date_create"
+                FROM deals
+                WHERE replace("uf_crm_cep", '-', '') = %s;
+            """, (cep_limpo,))
+            rows = cur.fetchall()
 
     resultados = []
     for r in rows:
         resultados.append({
-            "cliente": r[0],
-            "fase": r[1],
-            "cep": r[2],
-            "contato": r[3],
-            "criado_em": r[4].isoformat() if hasattr(r[4], 'isoformat') else str(r[4])
+            "id": r[0],
+            "cliente": r[1],
+            "fase": r[2],
+            "categoria": r[3],
+            "cep": r[4],
+            "contato": r[5],
+            "criado_em": r[6].isoformat() if hasattr(r[6], 'isoformat') else str(r[6])
         })
     return resultados
-
 
 def buscar_varios_ceps(lista_ceps):
     ceps_limpos = [c.replace("-", "").strip() for c in lista_ceps if c.strip()]
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("""
-        SELECT "title", "stage_id", "uf_crm_cep", "uf_crm_contato", "date_create"
-        FROM deals
-        WHERE "uf_crm_cep" = ANY(%s);
-    """, (ceps_limpos,))
-    rows = cur.fetchall()
-    cur.close()
-    conn.close()
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT "id", "title", "stage_id", "category_id", "uf_crm_cep", "uf_crm_contato", "date_create"
+                FROM deals
+                WHERE replace("uf_crm_cep", '-', '') = ANY(%s);
+            """, (ceps_limpos,))
+            rows = cur.fetchall()
 
     resultados = []
     for r in rows:
         resultados.append({
-            "cliente": r[0],
-            "fase": r[1],
-            "cep": r[2],
-            "contato": r[3],
-            "criado_em": r[4].isoformat() if hasattr(r[4], 'isoformat') else str(r[4])
+            "id": r[0],
+            "cliente": r[1],
+            "fase": r[2],
+            "categoria": r[3],
+            "cep": r[4],
+            "contato": r[5],
+            "criado_em": r[6].isoformat() if hasattr(r[6], 'isoformat') else str(r[6])
         })
     return resultados
+
 async def extrair_ceps_arquivo(arquivo: UploadFile):
     nome = arquivo.filename.lower()
     conteudo = await arquivo.read()
@@ -103,36 +104,40 @@ async def buscar(
     arquivo: UploadFile = File(None),
     formato: str = Form("txt")
 ):
+    if cep and (arquivo and arquivo.filename != ""):
+        return JSONResponse(content={"error": "Envie apenas um CEP ou um arquivo, não ambos."}, status_code=400)
+
     if arquivo and arquivo.filename != "":
         ceps = await extrair_ceps_arquivo(arquivo)
         if not ceps:
-            return JSONResponse(content={"error": "Nenhum CEP encontrado no arquivo."}, status_code=400)
+            return JSONResponse(content={"error": "Nenhum CEP encontrado no arquivo. Certifique-se de que o arquivo contém uma coluna ou linhas com CEPs."}, status_code=400)
 
         resultados = buscar_varios_ceps(ceps)
-        if resultados is None:
+        if not resultados:
             resultados = []
 
         if formato == "xlsx":
             df = pd.DataFrame(resultados)
-            caminho_saida = "resultado.xlsx"
-            df.to_excel(caminho_saida, index=False)
-            return FileResponse(
-                caminho_saida,
-                media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                filename="resultado.xlsx"
-            )
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+                df.to_excel(tmp.name, index=False)
+                tmp.seek(0)
+                return FileResponse(
+                    tmp.name,
+                    media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    filename="resultado.xlsx"
+                )
         else:
             output = io.StringIO()
             for res in resultados:
                 output.write(
-                    f"Cliente: {res['cliente']} | Fase: {res['fase']} | CEP: {res['cep']} | Contato: {res['contato']} | Criado em: {res['criado_em']}\n"
+                    f"ID: {res['id']} | Cliente: {res['cliente']} | Fase: {res['fase']} | Categoria: {res['categoria']} | CEP: {res['cep']} | Contato: {res['contato']} | Criado em: {res['criado_em']}\n"
                 )
             output.seek(0)
             return PlainTextResponse(content=output.read(), media_type='text/plain')
 
     elif cep:
         resultados = buscar_por_cep(cep)
-        if resultados is None:
+        if not resultados:
             resultados = []
         return JSONResponse(content={"total": len(resultados), "resultados": resultados})
 
