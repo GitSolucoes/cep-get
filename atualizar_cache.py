@@ -115,16 +115,15 @@ def get_stages(category_id):
             print(f"🚫 Falha ao obter estágios para categoria {category_id}")
             break
 
-        result = data.get("result", {})
-        for stage in result.get("stages", []):
+        stages_list = data.get("result", [])
+        for stage in stages_list:
             stages[stage["STATUS_ID"]] = stage["NAME"]
 
-        if "next" in result and result["next"]:
-            params["start"] = result["next"]
+        if "next" in data and data["next"]:
+            params["start"] = data["next"]
         else:
             break
     return stages
-
 
 def baixar_todos_dados():
     conn = get_conn()
