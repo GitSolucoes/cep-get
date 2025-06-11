@@ -6,7 +6,6 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv()
-
 # Parâmetros banco
 DB_PARAMS = {
     "dbname": os.getenv("DB_NAME"),
