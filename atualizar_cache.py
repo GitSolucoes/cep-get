@@ -2,7 +2,7 @@ import psycopg2
 import requests
 import time
 import os
-
+from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -72,9 +72,13 @@ PARAMS = {
         "UF_CRM_1698688252221",  # Rua
         "UF_CRM_1698761151613",  # Data de instalação
         "UF_CRM_1699452141037",  # Quais operadoras tem viabilidade?
-        "DATE_CREATE",
+        "",
+        "UF_CRM_1700661287551",  # Bairro
+        "UF_CRM_1731588487",     # Cidade
+        "UF_CRM_1700661252544",  # Número
+        "UF_CRM_1731589190",  #UF
     ],
-    "filter[>=DATE_CREATE]": "2021-01-01",
+    "filter[>=]": "2021-01-01",
     "start": 0,
 }
 
@@ -88,34 +92,11 @@ LIMITE_REGISTROS_TURBO = 20000
 def get_conn():
     return psycopg2.connect(**DB_PARAMS)
 
-valores = (
-    deal.get("ID"),
-    deal.get("TITLE"),
-    deal.get("STAGE_ID"),
-    deal.get("CATEGORY_ID"),
-    deal.get("UF_CRM_1700661314351"),
-    deal.get("CONTACT_ID"),
-    deal.get("DATE_CREATE"),
-    deal.get("UF_CRM_1698698407472"),
-    deal.get("UF_CRM_1698698858832"),
-    deal.get("UF_CRM_1697653896576"),
-    deal.get("UF_CRM_1697762313423"),
-    deal.get("UF_CRM_1697763267151"),
-    deal.get("UF_CRM_1697764091406"),
-    deal.get("UF_CRM_1697807340141"),
-    deal.get("UF_CRM_1697807353336"),
-    deal.get("UF_CRM_1697807372536"),
-    deal.get("UF_CRM_1697808018193"),
-    deal.get("UF_CRM_1698688252221"),
-    deal.get("UF_CRM_1698761151613"),
-    deal.get("UF_CRM_1699452141037"),
-    deal.get("UF_CRM_1700661287551"),
-    deal.get("UF_CRM_1731588487"),
-    deal.get("UF_CRM_1700661252544"),
-    deal.get("UF_CRM_1731589190"),
-)
-print(f"Enviando {len(valores)} valores para o DB")
-cur.execute(sua_query, valores)
+def parse_date(data_str):
+    try:
+        return datetime.strptime(data_str, "%Y-%m-%dT%H:%M:%S%z")  # ISO 8601 do Bitrix
+    except Exception:
+        return None  # ou datetime.min se quiser valor padrão
 
 
 def upsert_deal(conn, deal):
@@ -162,7 +143,7 @@ def upsert_deal(conn, deal):
                 deal.get("CATEGORY_ID"),
                 deal.get("UF_CRM_1700661314351"),
                 deal.get("CONTACT_ID"),
-                deal.get("DATE_CREATE"),
+                deal.get("DATE_CREATE"),  # Agora incluído
                 deal.get("UF_CRM_1698698407472"),
                 deal.get("UF_CRM_1698698858832"),
                 deal.get("UF_CRM_1697653896576"),
@@ -182,8 +163,6 @@ def upsert_deal(conn, deal):
                 deal.get("UF_CRM_1731589190"),
             ),
         )
-
-
 def fazer_requisicao(webhooks, params):
     for webhook in webhooks:
         try:
@@ -288,6 +267,7 @@ def baixar_todos_dados():
 
         tentativas = 0
         deals = data.get("result", [])
+        
 
         # Substituir IDs por nomes antes de salvar:
         for deal in deals:
@@ -310,9 +290,11 @@ def baixar_todos_dados():
             nomes_filtrados = [n for n in nomes if isinstance(n, str) and n.strip()]
             deal["UF_CRM_1699452141037"] = ", ".join(nomes_filtrados) if nomes_filtrados else ""
 
+            # ✅ FORMATAÇÃO DAS DATAS (coloque aqui)
+            deal["DATE_CREATE"] = parse_date(deal.get("DATE_CREATE"))
+            deal["UF_CRM_1697764091406"] = parse_date(deal.get("UF_CRM_1697764091406"))  # vencimento
+            deal["UF_CRM_1698761151613"] = parse_date(deal.get("UF_CRM_1698761151613"))  # instalação
 
-
-        
             upsert_deal(conn, deal)
 
         todos.extend(deals)
