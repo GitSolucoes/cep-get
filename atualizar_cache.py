@@ -88,34 +88,6 @@ LIMITE_REGISTROS_TURBO = 20000
 def get_conn():
     return psycopg2.connect(**DB_PARAMS)
 
-valores = (
-    deal.get("ID"),
-    deal.get("TITLE"),
-    deal.get("STAGE_ID"),
-    deal.get("CATEGORY_ID"),
-    deal.get("UF_CRM_1700661314351"),
-    deal.get("CONTACT_ID"),
-    deal.get("DATE_CREATE"),
-    deal.get("UF_CRM_1698698407472"),
-    deal.get("UF_CRM_1698698858832"),
-    deal.get("UF_CRM_1697653896576"),
-    deal.get("UF_CRM_1697762313423"),
-    deal.get("UF_CRM_1697763267151"),
-    deal.get("UF_CRM_1697764091406"),
-    deal.get("UF_CRM_1697807340141"),
-    deal.get("UF_CRM_1697807353336"),
-    deal.get("UF_CRM_1697807372536"),
-    deal.get("UF_CRM_1697808018193"),
-    deal.get("UF_CRM_1698688252221"),
-    deal.get("UF_CRM_1698761151613"),
-    deal.get("UF_CRM_1699452141037"),
-    deal.get("UF_CRM_1700661287551"),
-    deal.get("UF_CRM_1731588487"),
-    deal.get("UF_CRM_1700661252544"),
-    deal.get("UF_CRM_1731589190"),
-)
-print(f"Enviando {len(valores)} valores para o DB")
-cur.execute(sua_query, valores)
 
 
 def upsert_deal(conn, deal):
