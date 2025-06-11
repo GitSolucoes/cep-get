@@ -100,7 +100,7 @@ def upsert_deal(conn, deal):
                 quais_operadoras_tem_viabilidade,
                 uf_crm_bairro, uf_crm_cidade, uf_crm_numero, uf_crm_uf
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO UPDATE SET
                 title = EXCLUDED.title,
                 stage_id = EXCLUDED.stage_id,
