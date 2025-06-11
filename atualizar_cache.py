@@ -72,7 +72,6 @@ PARAMS = {
         "UF_CRM_1698688252221",  # Rua
         "UF_CRM_1698761151613",  # Data de instalação
         "UF_CRM_1699452141037",  # Quais operadoras tem viabilidade?
-        "",
         "UF_CRM_1700661287551",  # Bairro
         "UF_CRM_1731588487",     # Cidade
         "UF_CRM_1700661252544",  # Número
