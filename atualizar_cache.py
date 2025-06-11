@@ -2,9 +2,8 @@ import psycopg2
 import requests
 import time
 import os
-from datetime import datetime
+
 from dotenv import load_dotenv
-from dateutil.parser import parse
 
 load_dotenv()
 
@@ -22,6 +21,7 @@ WEBHOOKS = [
     "https://marketingsolucoes.bitrix24.com.br/rest/5332/y5q6wd4evy5o57ze/crm.deal.list",
 ]
 
+# Webhooks para pegar categorias e estágios
 WEBHOOK_CATEGORIES = [
     "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/crm.dealcategory.list",
     "https://marketingsolucoes.bitrix24.com.br/rest/5332/y5q6wd4evy5o57ze/crm.dealcategory.list",
@@ -31,6 +31,7 @@ WEBHOOK_STAGES = [
     "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/crm.dealcategory.stage.list",
     "https://marketingsolucoes.bitrix24.com.br/rest/5332/y5q6wd4evy5o57ze/crm.dealcategory.stage.list",
 ]
+
 
 operador_map = {
     "132": "VERO",
@@ -45,6 +46,7 @@ operador_map = {
     "356": "NENHUMA OPERADORA",
     "352": "NÃO INFORMOU ENDEREÇO",
 }
+
 
 PARAMS = {
     "select[]": [
@@ -70,12 +72,9 @@ PARAMS = {
         "UF_CRM_1698688252221",  # Rua
         "UF_CRM_1698761151613",  # Data de instalação
         "UF_CRM_1699452141037",  # Quais operadoras tem viabilidade?
-        "UF_CRM_1700661287551",  # Bairro
-        "UF_CRM_1731588487",     # Cidade
-        "UF_CRM_1700661252544",  # Número
-        "UF_CRM_1731589190",     # UF
+        "DATE_CREATE",
     ],
-    "filter[>=]": "2021-01-01",
+    "filter[>=DATE_CREATE]": "2021-01-01",
     "start": 0,
 }
 
@@ -90,17 +89,6 @@ def get_conn():
     return psycopg2.connect(**DB_PARAMS)
 
 
-def safe_date_str(date_str):
-    if not date_str or not isinstance(date_str, str):
-        return None
-    try:
-        dt = parse(date_str)
-        return dt.isoformat()  # retorna string ISO mesmo que entrada varie
-    except Exception:
-        return None
-
-
-
 def upsert_deal(conn, deal):
     with conn.cursor() as cur:
         cur.execute(
@@ -112,7 +100,7 @@ def upsert_deal(conn, deal):
                 quais_operadoras_tem_viabilidade,
                 uf_crm_bairro, uf_crm_cidade, uf_crm_numero, uf_crm_uf
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO UPDATE SET
                 title = EXCLUDED.title,
                 stage_id = EXCLUDED.stage_id,
@@ -143,29 +131,28 @@ def upsert_deal(conn, deal):
                 deal.get("TITLE"),
                 deal.get("STAGE_ID"),
                 deal.get("CATEGORY_ID"),
-                deal.get("UF_CRM_1700661314351"),
-                deal.get("CONTACT_ID"),
+                deal.get("UF_CRM_1700661314351"),  # uf_crm_cep
+                deal.get("CONTACT_ID"),  # uf_crm_contato
                 deal.get("DATE_CREATE"),
-                deal.get("UF_CRM_1698698407472"),
-                deal.get("UF_CRM_1698698858832"),
-                deal.get("UF_CRM_1697653896576"),
-                deal.get("UF_CRM_1697762313423"),
-                deal.get("UF_CRM_1697763267151"),
-                deal.get("UF_CRM_1697764091406"),
-                deal.get("UF_CRM_1697807340141"),
-                deal.get("UF_CRM_1697807353336"),
-                deal.get("UF_CRM_1697807372536"),
-                deal.get("UF_CRM_1697808018193"),
-                deal.get("UF_CRM_1698688252221"),
-                deal.get("UF_CRM_1698761151613"),
-                deal.get("UF_CRM_1699452141037"),
-                deal.get("UF_CRM_1700661287551"),
-                deal.get("UF_CRM_1731588487"),
-                deal.get("UF_CRM_1700661252544"),
-                deal.get("UF_CRM_1731589190"),
+                deal.get("UF_CRM_1698698407472"),  # contato01
+                deal.get("UF_CRM_1698698858832"),  # contato02
+                deal.get("UF_CRM_1697653896576"),  # ordem de serviço
+                deal.get("UF_CRM_1697762313423"),  # nome do cliente
+                deal.get("UF_CRM_1697763267151"),  # nome da mãe
+                deal.get("UF_CRM_1697764091406"),  # vencimento
+                deal.get("UF_CRM_1697807340141"),  # email
+                deal.get("UF_CRM_1697807353336"),  # cpf
+                deal.get("UF_CRM_1697807372536"),  # rg
+                deal.get("UF_CRM_1697808018193"),  # referencia
+                deal.get("UF_CRM_1698688252221"),  # rua
+                deal.get("UF_CRM_1698761151613"),  # data de instalação
+                deal.get("UF_CRM_1699452141037"),  # operadoras viáveis
+                deal.get("UF_CRM_1700661287551"),  # bairro
+                deal.get("UF_CRM_1731588487"),     # cidade
+                deal.get("UF_CRM_1700661252544"),  # número
+                deal.get("UF_CRM_1731589190"),     # uf
             ),
         )
-
 
 def fazer_requisicao(webhooks, params):
     for webhook in webhooks:
@@ -186,7 +173,6 @@ def fazer_requisicao(webhooks, params):
             continue
     print("🚫 Todos os webhooks falharam.")
     return None
-
 
 def get_operadora_map():
     try:
@@ -247,6 +233,7 @@ def baixar_todos_dados():
     print("🚀 Buscando operadoras dinamicamente...")
     operadora_map = get_operadora_map()
 
+
     print("🚀 Buscando categorias para mapear nomes...")
     categorias = get_categories()
 
@@ -272,38 +259,31 @@ def baixar_todos_dados():
         tentativas = 0
         deals = data.get("result", [])
 
+        # Substituir IDs por nomes antes de salvar:
         for deal in deals:
             cat_id = deal.get("CATEGORY_ID")
             stage_id = deal.get("STAGE_ID")
-
+        
             # Substitui categoria e estágio por nome
             if cat_id in categorias:
                 deal["CATEGORY_ID"] = categorias[cat_id]
             if cat_id in estagios_por_categoria and stage_id in estagios_por_categoria[cat_id]:
                 deal["STAGE_ID"] = estagios_por_categoria[cat_id][stage_id]
-
-            # Converte IDs de operadoras para nomes
+        
+            # ✅ Converte IDs de operadoras para nomes
             ids = deal.get("UF_CRM_1699452141037", [])
             if not isinstance(ids, list):
                 ids = []
-
+            
             nomes = [operadora_map.get(str(i)) for i in ids if str(i) in operadora_map]
+            # Remove None ou False dos nomes
             nomes_filtrados = [n for n in nomes if isinstance(n, str) and n.strip()]
             deal["UF_CRM_1699452141037"] = ", ".join(nomes_filtrados) if nomes_filtrados else ""
 
-            # FORMATAÇÃO DAS DATAS
-            deal["DATE_CREATE"] = safe_date_str(deal.get("DATE_CREATE")) #DATA DE CRIAÇÃO OF DE CARD
-            deal["UF_CRM_1697764091406"] = safe_date_str(deal.get("UF_CRM_1697764091406")) 
-            deal["UF_CRM_1698761151613"] = safe_date_str(deal.get("UF_CRM_1698761151613"))
 
-            # Debug das datas
-            print(f"ID {deal.get('ID')} - DATE_CREATE: {deal['DATE_CREATE']} | VENCIMENTO: {deal['UF_CRM_1697764091406']} | INSTALACAO: {deal['UF_CRM_1698761151613']}")
 
-            # Upsert protegido para evitar abortar tudo
-            try:
-                upsert_deal(conn, deal)
-            except Exception as e:
-                print(f"❌ Erro ao salvar deal {deal.get('ID')}: {e}")
+        
+            upsert_deal(conn, deal)
 
         todos.extend(deals)
         conn.commit()
@@ -315,11 +295,14 @@ def baixar_todos_dados():
                 PAGE_DELAY if len(todos) >= LIMITE_REGISTROS_TURBO else REQUEST_DELAY
             )
         else:
+            print("🏁 Fim da paginação.")
             break
 
     conn.close()
-    print(f"✅ Processo finalizado com total de {len(todos)} registros.")
+    return todos
 
 
 if __name__ == "__main__":
+    print("🚀 Iniciando atualização dos deals...")
     baixar_todos_dados()
+    print("✅ Deals atualizados.")
