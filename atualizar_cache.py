@@ -21,7 +21,6 @@ WEBHOOKS = [
     "https://marketingsolucoes.bitrix24.com.br/rest/5332/y5q6wd4evy5o57ze/crm.deal.list",
 ]
 
-# Webhooks para pegar categorias e estágios
 WEBHOOK_CATEGORIES = [
     "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/crm.dealcategory.list",
     "https://marketingsolucoes.bitrix24.com.br/rest/5332/y5q6wd4evy5o57ze/crm.dealcategory.list",
@@ -31,7 +30,6 @@ WEBHOOK_STAGES = [
     "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/crm.dealcategory.stage.list",
     "https://marketingsolucoes.bitrix24.com.br/rest/5332/y5q6wd4evy5o57ze/crm.dealcategory.stage.list",
 ]
-
 
 operador_map = {
     "132": "VERO",
@@ -46,7 +44,6 @@ operador_map = {
     "356": "NENHUMA OPERADORA",
     "352": "NÃO INFORMOU ENDEREÇO",
 }
-
 
 PARAMS = {
     "select[]": [
@@ -75,7 +72,7 @@ PARAMS = {
         "UF_CRM_1700661287551",  # Bairro
         "UF_CRM_1731588487",     # Cidade
         "UF_CRM_1700661252544",  # Número
-        "UF_CRM_1731589190",  #UF
+        "UF_CRM_1731589190",     # UF
     ],
     "filter[>=]": "2021-01-01",
     "start": 0,
@@ -91,11 +88,18 @@ LIMITE_REGISTROS_TURBO = 20000
 def get_conn():
     return psycopg2.connect(**DB_PARAMS)
 
+
 def parse_date(data_str):
     try:
-        return datetime.strptime(data_str, "%Y-%m-%dT%H:%M:%S%z")  # ISO 8601 do Bitrix
+        if not data_str:
+            return None
+        # Remove o 'Z' final se existir (às vezes o Bitrix pode usar)
+        if data_str.endswith('Z'):
+            data_str = data_str[:-1] + "+0000"
+        # Tenta vários formatos
+        return datetime.strptime(data_str, "%Y-%m-%dT%H:%M:%S%z")
     except Exception:
-        return None  # ou datetime.min se quiser valor padrão
+        return None  # pode retornar None para evitar erro
 
 
 def upsert_deal(conn, deal):
@@ -184,6 +188,7 @@ def fazer_requisicao(webhooks, params):
     print("🚫 Todos os webhooks falharam.")
     return None
 
+
 def get_operadora_map():
     try:
         resp = requests.get(
@@ -243,7 +248,6 @@ def baixar_todos_dados():
     print("🚀 Buscando operadoras dinamicamente...")
     operadora_map = get_operadora_map()
 
-
     print("🚀 Buscando categorias para mapear nomes...")
     categorias = get_categories()
 
@@ -268,35 +272,39 @@ def baixar_todos_dados():
 
         tentativas = 0
         deals = data.get("result", [])
-        
 
-        # Substituir IDs por nomes antes de salvar:
         for deal in deals:
             cat_id = deal.get("CATEGORY_ID")
             stage_id = deal.get("STAGE_ID")
-        
+
             # Substitui categoria e estágio por nome
             if cat_id in categorias:
                 deal["CATEGORY_ID"] = categorias[cat_id]
             if cat_id in estagios_por_categoria and stage_id in estagios_por_categoria[cat_id]:
                 deal["STAGE_ID"] = estagios_por_categoria[cat_id][stage_id]
-        
-            # ✅ Converte IDs de operadoras para nomes
+
+            # Converte IDs de operadoras para nomes
             ids = deal.get("UF_CRM_1699452141037", [])
             if not isinstance(ids, list):
                 ids = []
-            
+
             nomes = [operadora_map.get(str(i)) for i in ids if str(i) in operadora_map]
-            # Remove None ou False dos nomes
             nomes_filtrados = [n for n in nomes if isinstance(n, str) and n.strip()]
             deal["UF_CRM_1699452141037"] = ", ".join(nomes_filtrados) if nomes_filtrados else ""
 
-            # ✅ FORMATAÇÃO DAS DATAS (coloque aqui)
+            # FORMATAÇÃO DAS DATAS
             deal["DATE_CREATE"] = parse_date(deal.get("DATE_CREATE"))
             deal["UF_CRM_1697764091406"] = parse_date(deal.get("UF_CRM_1697764091406"))  # vencimento
             deal["UF_CRM_1698761151613"] = parse_date(deal.get("UF_CRM_1698761151613"))  # instalação
 
-            upsert_deal(conn, deal)
+            # Debug das datas
+            print(f"ID {deal.get('ID')} - DATE_CREATE: {deal['DATE_CREATE']} | VENCIMENTO: {deal['UF_CRM_1697764091406']} | INSTALACAO: {deal['UF_CRM_1698761151613']}")
+
+            # Upsert protegido para evitar abortar tudo
+            try:
+                upsert_deal(conn, deal)
+            except Exception as e:
+                print(f"❌ Erro ao salvar deal {deal.get('ID')}: {e}")
 
         todos.extend(deals)
         conn.commit()
@@ -308,14 +316,11 @@ def baixar_todos_dados():
                 PAGE_DELAY if len(todos) >= LIMITE_REGISTROS_TURBO else REQUEST_DELAY
             )
         else:
-            print("🏁 Fim da paginação.")
             break
 
     conn.close()
-    return todos
+    print(f"✅ Processo finalizado com total de {len(todos)} registros.")
 
 
 if __name__ == "__main__":
-    print("🚀 Iniciando atualização dos deals...")
     baixar_todos_dados()
-    print("✅ Deals atualizados.")
