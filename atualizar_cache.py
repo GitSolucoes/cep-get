@@ -267,7 +267,8 @@ def baixar_todos_dados():
             continue
 
         tentativas = 0
-         = data.get("result", [])
+        deals = data.get("result", [])
+        
 
         # Substituir IDs por nomes antes de salvar:
         for deal in deals:
