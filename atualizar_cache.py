@@ -73,6 +73,10 @@ PARAMS = {
         "UF_CRM_1698761151613",  # Data de instalação
         "UF_CRM_1699452141037",  # Quais operadoras tem viabilidade?
         "DATE_CREATE",
+        "UF_CRM_1700661287551",  # Bairro
+        "UF_CRM_1731588487",     # Cidade
+        "UF_CRM_1700661252544",  # Número
+        "UF_CRM_1731589190",  #UF
     ],
     "filter[>=DATE_CREATE]": "2021-01-01",
     "start": 0,
@@ -90,9 +94,10 @@ def get_conn():
 
 
 
+
 def upsert_deal(conn, deal):
     with conn.cursor() as cur:
-        cur.execute(
+       cur.execute(
             """
             INSERT INTO deals (
                 id, title, stage_id, category_id, uf_crm_cep, uf_crm_contato, date_create,
@@ -132,29 +137,28 @@ def upsert_deal(conn, deal):
                 deal.get("TITLE"),
                 deal.get("STAGE_ID"),
                 deal.get("CATEGORY_ID"),
-                deal.get("UF_CRM_1700661314351"),
-                deal.get("CONTACT_ID"),
+                deal.get("UF_CRM_1700661314351"),  # uf_crm_cep
+                deal.get("CONTACT_ID"),             # uf_crm_contato
                 deal.get("DATE_CREATE"),
-                deal.get("UF_CRM_1698698407472"),
-                deal.get("UF_CRM_1698698858832"),
-                deal.get("UF_CRM_1697653896576"),
-                deal.get("UF_CRM_1697762313423"),
-                deal.get("UF_CRM_1697763267151"),
-                deal.get("UF_CRM_1697764091406"),
-                deal.get("UF_CRM_1697807340141"),
-                deal.get("UF_CRM_1697807353336"),
-                deal.get("UF_CRM_1697807372536"),
-                deal.get("UF_CRM_1697808018193"),
-                deal.get("UF_CRM_1698688252221"),
-                deal.get("UF_CRM_1698761151613"),
-                deal.get("UF_CRM_1699452141037"),
-                deal.get("UF_CRM_1700661287551"),
-                deal.get("UF_CRM_1731588487"),
-                deal.get("UF_CRM_1700661252544"),
-                deal.get("UF_CRM_1731589190"),
+                deal.get("UF_CRM_1698698407472"),  # contato01
+                deal.get("UF_CRM_1698698858832"),  # contato02
+                deal.get("UF_CRM_1697653896576"),  # ordem de serviço
+                deal.get("UF_CRM_1697762313423"),  # nome do cliente
+                deal.get("UF_CRM_1697763267151"),  # nome da mãe
+                deal.get("UF_CRM_1697764091406"),  # vencimento
+                deal.get("UF_CRM_1697807340141"),  # email
+                deal.get("UF_CRM_1697807353336"),  # cpf
+                deal.get("UF_CRM_1697807372536"),  # rg
+                deal.get("UF_CRM_1697808018193"),  # referencia
+                deal.get("UF_CRM_1698688252221"),  # rua
+                deal.get("UF_CRM_1698761151613"),  # data de instalação
+                deal.get("UF_CRM_1699452141037"),  # operadoras viáveis
+                deal.get("UF_CRM_1700661287551"),  # bairro
+                deal.get("UF_CRM_1731588487"),     # cidade
+                deal.get("UF_CRM_1700661252544"),  # número
+                deal.get("UF_CRM_1731589190"),     # uf
             ),
         )
-
 
 def fazer_requisicao(webhooks, params):
     for webhook in webhooks:
