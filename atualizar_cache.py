@@ -100,9 +100,8 @@ def parse_date(date_str):
     except Exception:
         # Caso não consiga converter, retorne None
         return None
-
 def upsert_deal(conn, deal):
-    # Converte campos de data para datetime ou None
+    # Conversão dos campos de data
     date_create = parse_date(deal.get("DATE_CREATE"))
     data_de_vencimento = parse_date(deal.get("UF_CRM_1697764091406"))
     data_de_instalacao = parse_date(deal.get("UF_CRM_1698761151613"))
@@ -150,19 +149,19 @@ def upsert_deal(conn, deal):
                 deal.get("CATEGORY_ID"),
                 deal.get("UF_CRM_1700661314351"),
                 deal.get("CONTACT_ID"),
-                date_create,  # convertida
+                date_create,
                 deal.get("UF_CRM_1698698407472"),
                 deal.get("UF_CRM_1698698858832"),
                 deal.get("UF_CRM_1697653896576"),
                 deal.get("UF_CRM_1697762313423"),
                 deal.get("UF_CRM_1697763267151"),
-                data_de_vencimento,  # convertida
+                data_de_vencimento,
                 deal.get("UF_CRM_1697807340141"),
                 deal.get("UF_CRM_1697807353336"),
                 deal.get("UF_CRM_1697807372536"),
                 deal.get("UF_CRM_1697808018193"),
                 deal.get("UF_CRM_1698688252221"),
-                data_de_instalacao,  # convertida
+                data_de_instalacao,
                 deal.get("UF_CRM_1699452141037"),
                 deal.get("UF_CRM_1700661287551"),
                 deal.get("UF_CRM_1731588487"),
@@ -170,7 +169,8 @@ def upsert_deal(conn, deal):
                 deal.get("UF_CRM_1731589190"),
             ),
         )
-            
+
+
 def fazer_requisicao(webhooks, params):
     for webhook in webhooks:
         try:
@@ -298,10 +298,6 @@ def baixar_todos_dados():
             nomes_filtrados = [n for n in nomes if isinstance(n, str) and n.strip()]
             deal["UF_CRM_1699452141037"] = ", ".join(nomes_filtrados) if nomes_filtrados else ""
 
-            # ✅ FORMATAÇÃO DAS DATAS (coloque aqui)
-            deal["DATE_CREATE"] = parse_date(deal.get("DATE_CREATE"))
-            deal["UF_CRM_1697764091406"] = parse_date(deal.get("UF_CRM_1697764091406"))  # vencimento
-            deal["UF_CRM_1698761151613"] = parse_date(deal.get("UF_CRM_1698761151613"))  # instalação
 
             upsert_deal(conn, deal)
 
