@@ -17,10 +17,14 @@ import requests
 
 load_dotenv()
 
+# ✅ Define o caminho base do projeto
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 app = FastAPI()
+
+# ✅ Usa caminhos absolutos para static e templates
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
-
 
 BITRIX_API_BASE = "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5"
 
