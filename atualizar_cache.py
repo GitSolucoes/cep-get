@@ -2,7 +2,7 @@ import psycopg2
 import requests
 import time
 import os
-from datetime import datetime
+
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -72,12 +72,9 @@ PARAMS = {
         "UF_CRM_1698688252221",  # Rua
         "UF_CRM_1698761151613",  # Data de instalação
         "UF_CRM_1699452141037",  # Quais operadoras tem viabilidade?
-        "UF_CRM_1700661287551",  # Bairro
-        "UF_CRM_1731588487",     # Cidade
-        "UF_CRM_1700661252544",  # Número
-        "UF_CRM_1731589190",  #UF
+        "DATE_CREATE",
     ],
-    "filter[>=]": "2021-01-01",
+    "filter[>=DATE_CREATE]": "2021-01-01",
     "start": 0,
 }
 
@@ -91,21 +88,37 @@ LIMITE_REGISTROS_TURBO = 20000
 def get_conn():
     return psycopg2.connect(**DB_PARAMS)
 
-def parse_date(date_str):
-    if not date_str:
-        return None
-    try:
-        # Tenta parsear ISO 8601, como "2023-05-01T15:23:00+00:00" ou "2023-05-01 15:23:00"
-        return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
-    except Exception:
-        # Caso não consiga converter, retorne None
-        return None
-def upsert_deal(conn, deal):
-    # Conversão dos campos de data
-    date_create = parse_date(deal.get("DATE_CREATE"))
-    data_de_vencimento = parse_date(deal.get("UF_CRM_1697764091406"))
-    data_de_instalacao = parse_date(deal.get("UF_CRM_1698761151613"))
+valores = (
+    deal.get("ID"),
+    deal.get("TITLE"),
+    deal.get("STAGE_ID"),
+    deal.get("CATEGORY_ID"),
+    deal.get("UF_CRM_1700661314351"),
+    deal.get("CONTACT_ID"),
+    deal.get("DATE_CREATE"),
+    deal.get("UF_CRM_1698698407472"),
+    deal.get("UF_CRM_1698698858832"),
+    deal.get("UF_CRM_1697653896576"),
+    deal.get("UF_CRM_1697762313423"),
+    deal.get("UF_CRM_1697763267151"),
+    deal.get("UF_CRM_1697764091406"),
+    deal.get("UF_CRM_1697807340141"),
+    deal.get("UF_CRM_1697807353336"),
+    deal.get("UF_CRM_1697807372536"),
+    deal.get("UF_CRM_1697808018193"),
+    deal.get("UF_CRM_1698688252221"),
+    deal.get("UF_CRM_1698761151613"),
+    deal.get("UF_CRM_1699452141037"),
+    deal.get("UF_CRM_1700661287551"),
+    deal.get("UF_CRM_1731588487"),
+    deal.get("UF_CRM_1700661252544"),
+    deal.get("UF_CRM_1731589190"),
+)
+print(f"Enviando {len(valores)} valores para o DB")
+cur.execute(sua_query, valores)
 
+
+def upsert_deal(conn, deal):
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -149,19 +162,19 @@ def upsert_deal(conn, deal):
                 deal.get("CATEGORY_ID"),
                 deal.get("UF_CRM_1700661314351"),
                 deal.get("CONTACT_ID"),
-                date_create,
+                deal.get("DATE_CREATE"),
                 deal.get("UF_CRM_1698698407472"),
                 deal.get("UF_CRM_1698698858832"),
                 deal.get("UF_CRM_1697653896576"),
                 deal.get("UF_CRM_1697762313423"),
                 deal.get("UF_CRM_1697763267151"),
-                data_de_vencimento,
+                deal.get("UF_CRM_1697764091406"),
                 deal.get("UF_CRM_1697807340141"),
                 deal.get("UF_CRM_1697807353336"),
                 deal.get("UF_CRM_1697807372536"),
                 deal.get("UF_CRM_1697808018193"),
                 deal.get("UF_CRM_1698688252221"),
-                data_de_instalacao,
+                deal.get("UF_CRM_1698761151613"),
                 deal.get("UF_CRM_1699452141037"),
                 deal.get("UF_CRM_1700661287551"),
                 deal.get("UF_CRM_1731588487"),
@@ -275,7 +288,6 @@ def baixar_todos_dados():
 
         tentativas = 0
         deals = data.get("result", [])
-        
 
         # Substituir IDs por nomes antes de salvar:
         for deal in deals:
@@ -299,6 +311,8 @@ def baixar_todos_dados():
             deal["UF_CRM_1699452141037"] = ", ".join(nomes_filtrados) if nomes_filtrados else ""
 
 
+
+        
             upsert_deal(conn, deal)
 
         todos.extend(deals)
