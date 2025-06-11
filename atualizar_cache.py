@@ -72,13 +72,13 @@ PARAMS = {
         "UF_CRM_1698688252221",  # Rua
         "UF_CRM_1698761151613",  # Data de instalação
         "UF_CRM_1699452141037",  # Quais operadoras tem viabilidade?
-        "DATE_CREATE",
+        "",
         "UF_CRM_1700661287551",  # Bairro
         "UF_CRM_1731588487",     # Cidade
         "UF_CRM_1700661252544",  # Número
         "UF_CRM_1731589190",  #UF
     ],
-    "filter[>=DATE_CREATE]": "2021-01-01",
+    "filter[>=]": "2021-01-01",
     "start": 0,
 }
 
@@ -104,7 +104,7 @@ def upsert_deal(conn, deal):
        cur.execute(
             """
             INSERT INTO deals (
-                id, title, stage_id, category_id, uf_crm_cep, uf_crm_contato, date_create,
+                id, title, stage_id, category_id, uf_crm_cep, uf_crm_contato, ,
                 contato01, contato02, ordem_de_servico, nome_do_cliente, nome_da_mae,
                 data_de_vencimento, email, cpf, rg, referencia, rua, data_de_instalacao,
                 quais_operadoras_tem_viabilidade,
@@ -267,7 +267,7 @@ def baixar_todos_dados():
             continue
 
         tentativas = 0
-        deals = data.get("result", [])
+         = data.get("result", [])
 
         # Substituir IDs por nomes antes de salvar:
         for deal in deals:
@@ -290,9 +290,11 @@ def baixar_todos_dados():
             nomes_filtrados = [n for n in nomes if isinstance(n, str) and n.strip()]
             deal["UF_CRM_1699452141037"] = ", ".join(nomes_filtrados) if nomes_filtrados else ""
 
+            # ✅ FORMATAÇÃO DAS DATAS (coloque aqui)
+            deal["DATE_CREATE"] = parse_date(deal.get("DATE_CREATE"))
+            deal["UF_CRM_1697764091406"] = parse_date(deal.get("UF_CRM_1697764091406"))  # vencimento
+            deal["UF_CRM_1698761151613"] = parse_date(deal.get("UF_CRM_1698761151613"))  # instalação
 
-
-        
             upsert_deal(conn, deal)
 
         todos.extend(deals)
