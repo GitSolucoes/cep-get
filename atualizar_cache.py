@@ -126,20 +126,20 @@ def upsert_deal(conn, deal):
                 deal.get("STAGE_ID"),
                 deal.get("CATEGORY_ID"),
                 deal.get("UF_CRM_1700661314351"),  # uf_crm_cep
-                deal.get("UF_CRM_1698698407472"),  # uf_crm_contato
+                deal.get("CONTACT_ID"),  # uf_crm_contato
                 deal.get("DATE_CREATE"),
-                deal.get("UF_CRM_1698698858832"),  # contato01
-                deal.get("UF_CRM_1697653896576"),  # contato02
-                deal.get("UF_CRM_1697762313423"),  # ordem de serviço
-                deal.get("UF_CRM_1697763267151"),  # nome do cliente
-                deal.get("UF_CRM_1697764091406"),  # nome da mãe
-                deal.get("UF_CRM_1697807340141"),  # vencimento
-                deal.get("UF_CRM_1697807353336"),  # email
-                deal.get("UF_CRM_1697807372536"),  # cpf
-                deal.get("UF_CRM_1697808018193"),  # rg
-                deal.get("UF_CRM_1698688252221"),  # referencia
-                deal.get("UF_CRM_1698761151613"),  # rua
-                deal.get("UF_CRM_1699452141037"),  # data de instalação
+                deal.get("UF_CRM_1698698407472"),  # contato01
+                deal.get("UF_CRM_1698698858832"),  # contato02
+                deal.get("UF_CRM_1697653896576"),  # ordem de serviço
+                deal.get("UF_CRM_1697762313423"),  # nome do cliente
+                deal.get("UF_CRM_1697763267151"),  # nome da mãe
+                deal.get("UF_CRM_1697764091406"),  # vencimento
+                deal.get("UF_CRM_1697807340141"),  # email
+                deal.get("UF_CRM_1697807353336"),  # cpf
+                deal.get("UF_CRM_1697807372536"),  # rg
+                deal.get("UF_CRM_1697808018193"),  # referencia
+                deal.get("UF_CRM_1698688252221"),  # rua
+                deal.get("UF_CRM_1698761151613"),  # data de instalação
                 deal.get("UF_CRM_1699452141037"),  # operadoras viáveis
             ),
         )
