@@ -247,8 +247,9 @@ def baixar_todos_dados():
             # ✅ Converte IDs de operadoras para nomes
             ids = deal.get("UF_CRM_1699452141037", [])
             if isinstance(ids, list):
-                nomes = [operador_map.get(i, i) for i in ids]
-                deal["UF_CRM_1699452141037"] = ", ".join(nomes)
+                nomes = [operador_map.get(str(i), str(i)) for i in ids]
+                deal["UF_CRM_1699452141037"] = ", ".join(str(nome) for nome in nomes)
+
         
             upsert_deal(conn, deal)
 
