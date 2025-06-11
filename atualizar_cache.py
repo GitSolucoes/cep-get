@@ -164,6 +164,18 @@ def fazer_requisicao(webhooks, params):
     print("🚫 Todos os webhooks falharam.")
     return None
 
+def get_operadora_map():
+    try:
+        resp = requests.get(
+            "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/crm.deal.fields"
+        )
+        data = resp.json()
+        items = data.get("result", {}).get("UF_CRM_1699452141037", {}).get("items", [])
+        return {item["ID"]: item["VALUE"] for item in items}
+    except Exception as e:
+        print("Erro ao buscar operadoras:", e)
+        return {}
+
 
 def get_categories():
     params = {"start": 0}
@@ -208,6 +220,10 @@ def baixar_todos_dados():
     local_params = PARAMS.copy()
     tentativas = 0
 
+    print("🚀 Buscando operadoras dinamicamente...")
+    operadora_map = get_operadora_map()
+
+
     print("🚀 Buscando categorias para mapear nomes...")
     categorias = get_categories()
 
@@ -247,8 +263,9 @@ def baixar_todos_dados():
             # ✅ Converte IDs de operadoras para nomes
             ids = deal.get("UF_CRM_1699452141037", [])
             if isinstance(ids, list):
-                nomes = [operador_map.get(str(i), str(i)) for i in ids]
-                deal["UF_CRM_1699452141037"] = ", ".join(str(nome) for nome in nomes)
+                nomes = [operadora_map.get(str(i), f"ID desconhecido: {i}") for i in ids]
+                deal["UF_CRM_1699452141037"] = ", ".join(nomes)
+
 
         
             upsert_deal(conn, deal)
