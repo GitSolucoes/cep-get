@@ -88,60 +88,61 @@ LIMITE_REGISTROS_TURBO = 20000
 def get_conn():
     return psycopg2.connect(**DB_PARAMS)
 
-
 def upsert_deal(conn, deal):
     with conn.cursor() as cur:
         cur.execute(
             """
-            INSERT INTO deals ("id", "title", "stage_id", "category_id", "uf_crm_cep", "uf_crm_contato", "date_create", "contato01", "contato02", "ordem_de_servico", "nome_do_cliente",
-            "nome_da_mae", "data_de_vencimento", "email", "cpf", "rg", "referencia", "rua", "data_de_instalacao", "quais_operadoras_tem_viabilidade")
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT ("id") DO UPDATE SET
-                "title" = EXCLUDED."title",
-                "stage_id" = EXCLUDED."stage_id",
-                "category_id" = EXCLUDED."category_id",
-                "uf_crm_cep" = EXCLUDED."uf_crm_cep",
-                "uf_crm_contato" = EXCLUDED."uf_crm_contato",
-                "date_create" = EXCLUDED."date_create";
-                "contato01" = EXCLUDED."contato01";
-                "contato02" = EXCLUDED."contato02";
-                "ordem_de_servico" = EXCLUDED."ordem_de_servico";
-                "nome_do_cliente" = EXCLUDED."nome_do_cliente";
-                "nome_da_mae" = EXCLUDED."nome_da_mae";
-                "data_de_vencimento" = EXCLUDED."data_de_vencimento";
-                "email" = EXCLUDED."email";
-                "cpf" = EXCLUDED."cpf";
-                "rg" = EXCLUDED."rg";
-                "referencia" = EXCLUDED."referencia";
-                "rua" = EXCLUDED."rua";
-                "data_de_instalacao" = EXCLUDED."data_de_instalacao";
-                "quais_operadoras_tem_viabilidade" = EXCLUDED."quais_operadoras_tem_viabilidade";
-        """,
+            INSERT INTO deals (
+                id, title, stage_id, category_id, uf_crm_cep, uf_crm_contato, date_create,
+                contato01, contato02, ordem_de_servico, nome_do_cliente, nome_da_mae,
+                data_de_vencimento, email, cpf, rg, referencia, rua, data_de_instalacao,
+                quais_operadoras_tem_viabilidade
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (id) DO UPDATE SET
+                title = EXCLUDED.title,
+                stage_id = EXCLUDED.stage_id,
+                category_id = EXCLUDED.category_id,
+                uf_crm_cep = EXCLUDED.uf_crm_cep,
+                uf_crm_contato = EXCLUDED.uf_crm_contato,
+                date_create = EXCLUDED.date_create,
+                contato01 = EXCLUDED.contato01,
+                contato02 = EXCLUDED.contato02,
+                ordem_de_servico = EXCLUDED.ordem_de_servico,
+                nome_do_cliente = EXCLUDED.nome_do_cliente,
+                nome_da_mae = EXCLUDED.nome_da_mae,
+                data_de_vencimento = EXCLUDED.data_de_vencimento,
+                email = EXCLUDED.email,
+                cpf = EXCLUDED.cpf,
+                rg = EXCLUDED.rg,
+                referencia = EXCLUDED.referencia,
+                rua = EXCLUDED.rua,
+                data_de_instalacao = EXCLUDED.data_de_instalacao,
+                quais_operadoras_tem_viabilidade = EXCLUDED.quais_operadoras_tem_viabilidade;
+            """,
             (
                 deal.get("ID"),
                 deal.get("TITLE"),
                 deal.get("STAGE_ID"),
                 deal.get("CATEGORY_ID"),
-                deal.get("UF_CRM_1700661314351"),
-                deal.get("UF_CRM_1698698407472"),
+                deal.get("UF_CRM_1700661314351"),  # uf_crm_cep
+                deal.get("UF_CRM_1698698407472"),  # uf_crm_contato
                 deal.get("DATE_CREATE"),
-                deal.get("cep"),
-                deal.get("contato01"),
-                deal.get("contato02"),
-                deal.get("ordem_de_servico"),
-                deal.get("nome_do_cliente"),
-                deal.get("nome_da_mae"),
-                deal.get("data_de_vencimento"),
-                deal.get("email"),
-                deal.get("cpf"),
-                deal.get("rg"),
-                deal.get("referencia"),
-                deal.get("rua"),
-                deal.get("data_de_instalacao"),
-                deal.get("quais_operadoras_tem_viabilidade"),
+                deal.get("UF_CRM_1698698858832"),  # contato01
+                deal.get("UF_CRM_1697653896576"),  # contato02
+                deal.get("UF_CRM_1697762313423"),  # ordem de serviço
+                deal.get("UF_CRM_1697763267151"),  # nome do cliente
+                deal.get("UF_CRM_1697764091406"),  # nome da mãe
+                deal.get("UF_CRM_1697807340141"),  # vencimento
+                deal.get("UF_CRM_1697807353336"),  # email
+                deal.get("UF_CRM_1697807372536"),  # cpf
+                deal.get("UF_CRM_1697808018193"),  # rg
+                deal.get("UF_CRM_1698688252221"),  # referencia
+                deal.get("UF_CRM_1698761151613"),  # rua
+                deal.get("UF_CRM_1699452141037"),  # data de instalação
+                deal.get("UF_CRM_1699452141037"),  # operadoras viáveis
             ),
         )
-
 
 def fazer_requisicao(webhooks, params):
     for webhook in webhooks:
