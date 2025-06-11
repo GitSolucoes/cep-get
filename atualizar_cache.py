@@ -88,13 +88,12 @@ LIMITE_REGISTROS_TURBO = 20000
 def get_conn():
     return psycopg2.connect(**DB_PARAMS)
 
-
-def format_date_create(date_str):
+def format_date(date_str):
     if not date_str:
         return None
     dt = parser.isoparse(date_str)
     dt_naive = dt.replace(tzinfo=None)
-    return dt_naive.strftime("%d/%m/%Y %H:%M:%S")
+    return dt_naive.strftime("%d/%m/%Y")
 
 
 
@@ -288,7 +287,10 @@ def baixar_todos_dados():
             deal["UF_CRM_1699452141037"] = ", ".join(nomes_filtrados) if nomes_filtrados else ""
         
             # ✅ Formata a data de criação
-            deal["DATE_CREATE"] = format_date_create(deal.get("DATE_CREATE"))
+            deal["DATE_CREATE"] = format_date(deal.get("DATE_CREATE"))
+            deal["UF_CRM_1698761151613"] = format_date(deal.get("UF_CRM_1698761151613"))
+
+
         
             # ⬇️ Grava no banco
             upsert_deal(conn, deal)
