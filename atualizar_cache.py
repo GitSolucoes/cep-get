@@ -173,7 +173,7 @@ def get_operadora_map():
         items = data.get("result", {}).get("UF_CRM_1699452141037", {}).get("items", [])
         return {item["ID"]: item["VALUE"] for item in items}
     except Exception as e:
-        print("Erro ao buscar operadoras:", e)
+        print("❌ Erro ao buscar operadoras:", e)
         return {}
 
 
@@ -263,8 +263,9 @@ def baixar_todos_dados():
             # ✅ Converte IDs de operadoras para nomes
             ids = deal.get("UF_CRM_1699452141037", [])
             if isinstance(ids, list):
-                nomes = [operadora_map.get(str(i), f"ID desconhecido: {i}") for i in ids]
-                deal["UF_CRM_1699452141037"] = ", ".join(nomes)
+                nomes = [operadora_map.get(str(i)) for i in ids if str(i) in operadora_map]
+                deal["UF_CRM_1699452141037"] = ", ".join(nomes) if nomes else ""
+
 
 
         
