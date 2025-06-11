@@ -237,16 +237,19 @@ def baixar_todos_dados():
         for deal in deals:
             cat_id = deal.get("CATEGORY_ID")
             stage_id = deal.get("STAGE_ID")
-            # Substitui categoria pelo nome, se existir
+        
+            # Substitui categoria e estágio por nome
             if cat_id in categorias:
                 deal["CATEGORY_ID"] = categorias[cat_id]
-            # Substitui estágio pelo nome, se existir
-            if (
-                cat_id in estagios_por_categoria
-                and stage_id in estagios_por_categoria[cat_id]
-            ):
+            if cat_id in estagios_por_categoria and stage_id in estagios_por_categoria[cat_id]:
                 deal["STAGE_ID"] = estagios_por_categoria[cat_id][stage_id]
-
+        
+            # ✅ Converte IDs de operadoras para nomes
+            ids = deal.get("UF_CRM_1699452141037", [])
+            if isinstance(ids, list):
+                nomes = [operador_map.get(i, i) for i in ids]
+                deal["UF_CRM_1699452141037"] = ", ".join(nomes)
+        
             upsert_deal(conn, deal)
 
         todos.extend(deals)
