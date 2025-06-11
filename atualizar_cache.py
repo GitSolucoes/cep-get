@@ -4,6 +4,7 @@ import time
 import os
 from datetime import datetime
 from dotenv import load_dotenv
+from dateutil.parser import parse
 
 load_dotenv()
 
@@ -89,17 +90,15 @@ def get_conn():
     return psycopg2.connect(**DB_PARAMS)
 
 
-def parse_date(data_str):
+def safe_date_str(date_str):
+    if not date_str or not isinstance(date_str, str):
+        return None
     try:
-        if not data_str:
-            return None
-        # Remove o 'Z' final se existir (às vezes o Bitrix pode usar)
-        if data_str.endswith('Z'):
-            data_str = data_str[:-1] + "+0000"
-        # Tenta vários formatos
-        return datetime.strptime(data_str, "%Y-%m-%dT%H:%M:%S%z")
+        dt = parse(date_str)
+        return dt.isoformat()  # retorna string ISO mesmo que entrada varie
     except Exception:
-        return None  # pode retornar None para evitar erro
+        return None
+
 
 
 def upsert_deal(conn, deal):
@@ -293,9 +292,9 @@ def baixar_todos_dados():
             deal["UF_CRM_1699452141037"] = ", ".join(nomes_filtrados) if nomes_filtrados else ""
 
             # FORMATAÇÃO DAS DATAS
-            deal["DATE_CREATE"] = parse_date(deal.get("DATE_CREATE"))
-            deal["UF_CRM_1697764091406"] = parse_date(deal.get("UF_CRM_1697764091406"))  # vencimento
-            deal["UF_CRM_1698761151613"] = parse_date(deal.get("UF_CRM_1698761151613"))  # instalação
+            deal["DATE_CREATE"] = safe_date_str(deal.get("DATE_CREATE")) #DATA DE CRIAÇÃO OF DE CARD
+            deal["UF_CRM_1697764091406"] = safe_date_str(deal.get("UF_CRM_1697764091406")) 
+            deal["UF_CRM_1698761151613"] = safe_date_str(deal.get("UF_CRM_1698761151613"))
 
             # Debug das datas
             print(f"ID {deal.get('ID')} - DATE_CREATE: {deal['DATE_CREATE']} | VENCIMENTO: {deal['UF_CRM_1697764091406']} | INSTALACAO: {deal['UF_CRM_1698761151613']}")
