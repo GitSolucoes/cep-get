@@ -18,7 +18,7 @@ import requests
 load_dotenv()
 
 app = FastAPI()
-app.mount("/static", StaticFiles(directory="./cep-get-main/static"), name="static")
+app.mount("/static", StaticFiles(directory="./cep-get/static"), name="static")
 templates = Jinja2Templates(directory="./cep-get/templates")
 
 
