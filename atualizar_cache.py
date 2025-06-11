@@ -91,14 +91,22 @@ LIMITE_REGISTROS_TURBO = 20000
 def get_conn():
     return psycopg2.connect(**DB_PARAMS)
 
-def parse_date(data_str):
+def parse_date(date_str):
+    if not date_str:
+        return None
     try:
-        return datetime.strptime(data_str, "%Y-%m-%dT%H:%M:%S%z")  # ISO 8601 do Bitrix
+        # Tenta parsear ISO 8601, como "2023-05-01T15:23:00+00:00" ou "2023-05-01 15:23:00"
+        return datetime.fromisoformat(date_str.replace("Z", "+00:00"))
     except Exception:
-        return None  # ou datetime.min se quiser valor padrão
-
+        # Caso não consiga converter, retorne None
+        return None
 
 def upsert_deal(conn, deal):
+    # Converte campos de data para datetime ou None
+    date_create = parse_date(deal.get("DATE_CREATE"))
+    data_de_vencimento = parse_date(deal.get("UF_CRM_1697764091406"))
+    data_de_instalacao = parse_date(deal.get("UF_CRM_1698761151613"))
+
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -142,19 +150,19 @@ def upsert_deal(conn, deal):
                 deal.get("CATEGORY_ID"),
                 deal.get("UF_CRM_1700661314351"),
                 deal.get("CONTACT_ID"),
-                deal.get("DATE_CREATE"),  # Agora incluído
+                date_create,  # convertida
                 deal.get("UF_CRM_1698698407472"),
                 deal.get("UF_CRM_1698698858832"),
                 deal.get("UF_CRM_1697653896576"),
                 deal.get("UF_CRM_1697762313423"),
                 deal.get("UF_CRM_1697763267151"),
-                deal.get("UF_CRM_1697764091406"),
+                data_de_vencimento,  # convertida
                 deal.get("UF_CRM_1697807340141"),
                 deal.get("UF_CRM_1697807353336"),
                 deal.get("UF_CRM_1697807372536"),
                 deal.get("UF_CRM_1697808018193"),
                 deal.get("UF_CRM_1698688252221"),
-                deal.get("UF_CRM_1698761151613"),
+                data_de_instalacao,  # convertida
                 deal.get("UF_CRM_1699452141037"),
                 deal.get("UF_CRM_1700661287551"),
                 deal.get("UF_CRM_1731588487"),
@@ -162,6 +170,7 @@ def upsert_deal(conn, deal):
                 deal.get("UF_CRM_1731589190"),
             ),
         )
+            
 def fazer_requisicao(webhooks, params):
     for webhook in webhooks:
         try:
