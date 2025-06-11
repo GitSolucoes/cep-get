@@ -158,6 +158,69 @@
 
     <!-- Script -->
     <script>
+document.getElementById("cep-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const cep = document.getElementById("cep").value;
+  const arquivo = document.getElementById("arquivo-cep").files[0];
+  const formato = document.getElementById("formato-cep").value;
+  const carregando = document.getElementById("carregando-cep");
+  const resultadoDiv = document.getElementById("resultado");
+
+  carregando.style.display = "block";
+  resultadoDiv.innerHTML = "";
+
+  const formData = new FormData();
+  if (arquivo) {
+    formData.append("arquivo", arquivo);
+  } else {
+    formData.append("cep", cep);
+  }
+  formData.append("formato", formato);
+
+  const response = await fetch("/buscar", {
+    method: "POST",
+    body: formData,
+  });
+
+  carregando.style.display = "none";
+
+  if (response.ok) {
+    if (formato === "xlsx") {
+      // Download do Excel
+      const blob = await response.blob();
+      const link = document.createElement("a");
+      link.href = window.URL.createObjectURL(blob);
+      link.download = "resultado.xlsx";
+      link.click();
+      resultadoDiv.innerHTML = '<div class="download-msg">Download concluído!</div>';
+    } else {
+      const data = await response.json();
+      if (data.resultados?.length > 0) {
+        data.resultados.forEach((res) => {
+          const card = document.createElement("div");
+          card.className = "resultado-card";
+          card.innerHTML = `
+            <div class="card-section">
+              <p><strong>Cliente:</strong> ${res.cliente}</p>
+              <p><strong>CEP:</strong> ${res.cep}</p>
+              <p><strong>Categoria:</strong> ${res.categoria}</p>
+              <p><strong>Fase:</strong> ${res.fase}</p>
+            </div>`;
+          resultadoDiv.appendChild(card);
+        });
+      } else {
+        resultadoDiv.innerHTML = '<div class="nenhum-resultado">Nenhum resultado encontrado.</div>';
+      }
+    }
+  } else {
+    const erro = await response.json();
+    resultadoDiv.innerHTML = `<div class="nenhum-resultado">Erro: ${erro.error || "Erro desconhecido."}</div>`;
+  }
+});
+</script>
+    
+    <script>
       const botoes = document.querySelectorAll(".btn-opcao");
       const formularios = {
         rua: document.getElementById("form-rua"),
