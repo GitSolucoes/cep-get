@@ -88,6 +88,7 @@ LIMITE_REGISTROS_TURBO = 20000
 def get_conn():
     return psycopg2.connect(**DB_PARAMS)
 
+
 def upsert_deal(conn, deal):
     with conn.cursor() as cur:
         cur.execute(
@@ -96,9 +97,10 @@ def upsert_deal(conn, deal):
                 id, title, stage_id, category_id, uf_crm_cep, uf_crm_contato, date_create,
                 contato01, contato02, ordem_de_servico, nome_do_cliente, nome_da_mae,
                 data_de_vencimento, email, cpf, rg, referencia, rua, data_de_instalacao,
-                quais_operadoras_tem_viabilidade
+                quais_operadoras_tem_viabilidade,
+                uf_crm_bairro, uf_crm_cidade, uf_crm_numero, uf_crm_uf
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (id) DO UPDATE SET
                 title = EXCLUDED.title,
                 stage_id = EXCLUDED.stage_id,
@@ -118,7 +120,11 @@ def upsert_deal(conn, deal):
                 referencia = EXCLUDED.referencia,
                 rua = EXCLUDED.rua,
                 data_de_instalacao = EXCLUDED.data_de_instalacao,
-                quais_operadoras_tem_viabilidade = EXCLUDED.quais_operadoras_tem_viabilidade;
+                quais_operadoras_tem_viabilidade = EXCLUDED.quais_operadoras_tem_viabilidade,
+                uf_crm_bairro = EXCLUDED.uf_crm_bairro,
+                uf_crm_cidade = EXCLUDED.uf_crm_cidade,
+                uf_crm_numero = EXCLUDED.uf_crm_numero,
+                uf_crm_uf = EXCLUDED.uf_crm_uf;
             """,
             (
                 deal.get("ID"),
@@ -141,6 +147,10 @@ def upsert_deal(conn, deal):
                 deal.get("UF_CRM_1698688252221"),  # rua
                 deal.get("UF_CRM_1698761151613"),  # data de instalação
                 deal.get("UF_CRM_1699452141037"),  # operadoras viáveis
+                deal.get("UF_CRM_1700661287551"),  # bairro
+                deal.get("UF_CRM_1731588487"),     # cidade
+                deal.get("UF_CRM_1700661252544"),  # número
+                deal.get("UF_CRM_1731589190"),     # uf
             ),
         )
 
