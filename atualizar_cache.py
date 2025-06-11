@@ -2,7 +2,7 @@ import psycopg2
 import requests
 import time
 import os
-
+from datetime import datetime
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -92,7 +92,11 @@ LIMITE_REGISTROS_TURBO = 20000
 def get_conn():
     return psycopg2.connect(**DB_PARAMS)
 
-
+def parse_date(data_str):
+    try:
+        return datetime.strptime(data_str, "%Y-%m-%dT%H:%M:%S%z")  # ISO 8601 do Bitrix
+    except Exception:
+        return None  # ou datetime.min se quiser valor padrão
 
 
 def upsert_deal(conn, deal):
