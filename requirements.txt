@@ -7,3 +7,4 @@ requests
 python-dotenv
 Jinja2
 openpyxl
+flask==3.0.2
