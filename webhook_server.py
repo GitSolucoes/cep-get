@@ -7,11 +7,10 @@ app = Flask(__name__)
 def bitrix_webhook():
     try:
         data = request.get_json(force=True)
+        print("📥 Payload recebido:", data)  # 👈 log do conteúdo bruto
     except Exception as e:
         return jsonify({"error": "Payload inválido", "detalhe": str(e)}), 400
 
-    if not data or "data" not in data or "FIELDS" not in data["data"]:
-        return jsonify({"error": "Formato inesperado"}), 400
 
     deal = data["data"]["FIELDS"]
 
