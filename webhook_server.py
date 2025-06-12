@@ -133,7 +133,7 @@ def load_all_deals():
                 "start": start,
                 "order": {"ID": "ASC"},
                 "select": ["*"]
-            }, timeout=30)
+            }, timeout=100)
 
             response.raise_for_status()
             data = response.json()
@@ -151,7 +151,7 @@ def load_all_deals():
 
             start = data["next"]
 
-            time.sleep(2)  # <<< pausa de 2 segundos entre as requisições para não dar 429
+            time.sleep(100)  # <<< pausa de 2 segundos entre as requisições para não dar 429
 
         except Exception as e:
             print(f"❌ Erro durante paginação: {e}")
