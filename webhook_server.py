@@ -16,28 +16,45 @@ def bitrix_webhook():
         form_data = request.form.to_dict(flat=False)
         print("📦 Form recebido:", form_data)
 
-        # Extrai o ID do negócio
         deal_id = form_data.get("data[FIELDS][ID]", [None])[0]
-
         if not deal_id:
             return jsonify({"error": "ID do negócio não encontrado"}), 400
 
-        # Requisição para pegar o negócio completo
         resp = requests.get(BITRIX_WEBHOOK, params={"id": deal_id}, timeout=20)
         data = resp.json()
-
         if "result" not in data:
             return jsonify({"error": "Resposta inválida do Bitrix"}), 502
 
         deal = data["result"]
 
-        # Formatar datas
+        # Converte datas
         if "DATE_CREATE" in deal:
             deal["DATE_CREATE"] = format_date(deal["DATE_CREATE"])
         if "UF_CRM_1698761151613" in deal:
             deal["UF_CRM_1698761151613"] = format_date(deal["UF_CRM_1698761151613"])
 
-        # Salva no banco
+        # Pega mapas para converter IDs para nomes (igual no batch)
+        categorias = get_categories()
+        estagios_por_categoria = {cat_id: get_stages(cat_id) for cat_id in categorias.keys()}
+        operadora_map = get_operadora_map()
+
+        # Converte categoria e estágio para nome
+        cat_id = deal.get("CATEGORY_ID")
+        stage_id = deal.get("STAGE_ID")
+        if cat_id in categorias:
+            deal["CATEGORY_ID"] = categorias[cat_id]
+        if cat_id in estagios_por_categoria and stage_id in estagios_por_categoria[cat_id]:
+            deal["STAGE_ID"] = estagios_por_categoria[cat_id][stage_id]
+
+        # Converte lista de IDs de operadoras para nomes string
+        ids = deal.get("UF_CRM_1699452141037", [])
+        if not isinstance(ids, list):
+            ids = []
+        nomes = [operadora_map.get(str(i)) for i in ids if str(i) in operadora_map]
+        nomes_filtrados = [n for n in nomes if isinstance(n, str) and n.strip()]
+        deal["UF_CRM_1699452141037"] = ", ".join(nomes_filtrados) if nomes_filtrados else ""
+
+        # Upsert no banco
         conn = get_conn()
         upsert_deal(conn, deal)
         conn.commit()
@@ -49,6 +66,7 @@ def bitrix_webhook():
     except Exception as e:
         print(f"❌ Erro ao processar webhook: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 
 if __name__ == "__main__":
