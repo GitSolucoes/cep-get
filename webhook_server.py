@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from atualizar_cache import get_conn, upsert_deal, format_date
+from atualizar_cache import get_conn, upsert_deal, format_date, get_categories, get_stages, get_operadora_map
 import requests
 import os
 
