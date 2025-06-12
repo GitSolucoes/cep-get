@@ -132,7 +132,7 @@ def load_all_deals():
                 "start": start,
                 "order": {"ID": "ASC"},
                 "select": ["*"]
-            }, timeout=30)
+            }, timeout=300)
 
             response.raise_for_status()
             data = response.json()
@@ -147,24 +147,17 @@ def load_all_deals():
             if "next" not in data:
                 break
 
-            start = data["next"]  # atualizar start para próxima página
-
-            time.sleep(10)  # pausa de 10 segundos para evitar 429
-
-        except Exception as e:
-            print(f"❌ Erro durante paginação: {e}")
-            break
-
             start = data["next"]
+            time.sleep(100)  # tempo padrão entre chamadas
 
-            time.sleep(100)  # <<< pausa de 2 segundos entre as requisições para não dar 429
-
-        except Exception as e:
-            print(f"❌ Erro durante paginação: {e}")
-            break
-
-            start = data["next"]
-
+        except HTTPError as http_err:
+            if response.status_code == 429:
+                print("⏳ Limite de requisições excedido (429). Aguardando 2 minutos antes de tentar novamente...")
+                time.sleep(160)  # espera 2 minutos
+                continue  # tenta de novo o mesmo start
+            else:
+                print(f"❌ Erro HTTP inesperado: {http_err}")
+                break
         except Exception as e:
             print(f"❌ Erro durante paginação: {e}")
             break
@@ -172,6 +165,7 @@ def load_all_deals():
     if not all_deals:
         print("⚠️ Nenhum negócio encontrado.")
         return
+
 
     # Reaproveita lógica do webhook
     categorias = get_categories()
