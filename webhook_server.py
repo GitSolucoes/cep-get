@@ -124,7 +124,6 @@ def load_all_deals():
 
     all_deals = []
     start = 0
-    limit = 50
     url = "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5/crm.deal.list"
 
     while True:
@@ -133,13 +132,12 @@ def load_all_deals():
                 "start": start,
                 "order": {"ID": "ASC"},
                 "select": ["*"]
-            }, timeout=100)
+            }, timeout=30)
 
             response.raise_for_status()
             data = response.json()
 
             result = data.get("result", [])
-
             ids = [deal.get("ID") for deal in result]
             print(f"📋 IDs recebidos neste lote: {ids}")
 
@@ -148,6 +146,14 @@ def load_all_deals():
 
             if "next" not in data:
                 break
+
+            start = data["next"]  # atualizar start para próxima página
+
+            time.sleep(10)  # pausa de 10 segundos para evitar 429
+
+        except Exception as e:
+            print(f"❌ Erro durante paginação: {e}")
+            break
 
             start = data["next"]
 
