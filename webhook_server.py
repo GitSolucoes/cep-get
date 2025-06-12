@@ -118,7 +118,6 @@ def bitrix_webhook():
         print(f"❌ Erro ao processar webhook: {e}")
         return jsonify({"error": str(e)}), 500
 
-
 def load_all_deals():
     print("🔁 Iniciando carga completa de negócios...")
 
@@ -139,6 +138,11 @@ def load_all_deals():
             data = response.json()
 
             result = data.get("result", [])
+
+            # Printar os IDs do lote atual
+            ids = [deal.get("ID") for deal in result]
+            print(f"📋 IDs recebidos neste lote: {ids}")
+
             all_deals.extend(result)
             print(f"📦 Total acumulado: {len(all_deals)} negócios")
 
