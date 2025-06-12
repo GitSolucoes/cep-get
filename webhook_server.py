@@ -118,6 +118,7 @@ def bitrix_webhook():
         print(f"❌ Erro ao processar webhook: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 def load_all_deals():
     print("🔁 Iniciando carga completa de negócios...")
 
@@ -139,7 +140,6 @@ def load_all_deals():
 
             result = data.get("result", [])
 
-            # Printar os IDs do lote atual
             ids = [deal.get("ID") for deal in result]
             print(f"📋 IDs recebidos neste lote: {ids}")
 
@@ -148,6 +148,14 @@ def load_all_deals():
 
             if "next" not in data:
                 break
+
+            start = data["next"]
+
+            time.sleep(2)  # <<< pausa de 2 segundos entre as requisições para não dar 429
+
+        except Exception as e:
+            print(f"❌ Erro durante paginação: {e}")
+            break
 
             start = data["next"]
 
