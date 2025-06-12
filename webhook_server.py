@@ -1,22 +1,20 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request
 from atualizar_cache import get_conn, upsert_deal, format_date
 
 app = Flask(__name__)
 
 @app.route("/bitrix-webhook", methods=["POST"])
 def bitrix_webhook():
-    try:
-        data = request.get_json(force=True)
-        print("📥 Payload recebido:", data)  # 👈 ESSENCIAL para debug
-    except Exception as e:
-        print("❌ Erro ao fazer parse do JSON:", e)
-        return jsonify({"error": "Payload inválido", "detalhe": str(e)}), 400
+    print("🔔 Webhook recebido")
+    
+    # Exibe headers para saber o tipo de conteúdo
+    print("📩 Headers:", dict(request.headers))
+    
+    # Exibe corpo cru (caso não seja JSON)
+    raw = request.get_data(as_text=True)
+    print("📦 Corpo cru da requisição:", raw)
 
-    if not data:
-        print("❌ JSON vazio ou malformado")
-        return jsonify({"error": "Sem conteúdo no JSON"}), 400
-
-    return jsonify({"debug": "recebido"}), 200  # Só para teste por enquanto
+    return {"debug": "recebido"}, 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=1433)
