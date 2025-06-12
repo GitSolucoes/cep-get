@@ -5,15 +5,17 @@ app = Flask(__name__)
 
 @app.route("/bitrix-webhook", methods=["POST"])
 def bitrix_webhook():
-    data = request.json
+    try:
+        data = request.get_json(force=True)
+    except Exception as e:
+        return jsonify({"error": "Payload inválido", "detalhe": str(e)}), 400
 
-    # Verifica se os campos esperados existem
     if not data or "data" not in data or "FIELDS" not in data["data"]:
-        return jsonify({"error": "Formato inválido"}), 400
+        return jsonify({"error": "Formato inesperado"}), 400
 
     deal = data["data"]["FIELDS"]
 
-    # Formata as datas relevantes, se existirem
+    # Formata datas
     if "DATE_CREATE" in deal:
         deal["DATE_CREATE"] = format_date(deal["DATE_CREATE"])
     if "UF_CRM_1698761151613" in deal:
