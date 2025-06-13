@@ -131,9 +131,9 @@ def load_all_deals():
             response = requests.post(url, json={
                 "start": start,
                 "order": {"ID": "ASC"},
+                "filter": {">=DATE_CREATE": "2024-02-01T00:00:00Z"},
                 "select": ["*"]
             }, timeout=300)
-
             response.raise_for_status()
             data = response.json()
 
