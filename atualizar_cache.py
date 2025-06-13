@@ -33,19 +33,6 @@ WEBHOOK_STAGES = [
 ]
 
 
-operador_map = {
-    "132": "VERO",
-    "34652": "GIGA+",
-    "48734": "BLINK",
-    "48764": "DESKTOP",
-    "49750": "MASTER",
-    "60994": "BL FIBRA",
-    "61062": "IMPLANTAR",
-    "61156": "CDB",
-    "61158": "NIO",
-    "356": "NENHUMA OPERADORA",
-    "352": "NÃO INFORMOU ENDEREÇO",
-}
 
 
 PARAMS = {
