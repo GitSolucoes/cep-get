@@ -161,7 +161,9 @@
 document.getElementById("cep-form").addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const cep = document.getElementById("cep").value;
+  let cep = document.getElementById("cep").value;
+  cep = cep.replace(/\D/g, "");  // Limpa tudo que não for número
+
   const arquivo = document.getElementById("arquivo-cep").files[0];
   const formato = document.getElementById("formato-cep").value;
   const carregando = document.getElementById("carregando-cep");
@@ -187,7 +189,6 @@ document.getElementById("cep-form").addEventListener("submit", async (e) => {
 
   if (response.ok) {
     if (formato === "xlsx") {
-      // Download do Excel
       const blob = await response.blob();
       const link = document.createElement("a");
       link.href = window.URL.createObjectURL(blob);
@@ -218,50 +219,6 @@ document.getElementById("cep-form").addEventListener("submit", async (e) => {
     resultadoDiv.innerHTML = `<div class="nenhum-resultado">Erro: ${erro.error || "Erro desconhecido."}</div>`;
   }
 });
-</script>
-    
-    <script>
-      const botoes = document.querySelectorAll(".btn-opcao");
-      const formularios = {
-        rua: document.getElementById("form-rua"),
-        bairro: document.getElementById("form-bairro"),
-        cidade: document.getElementById("form-cidade"),
-        estado: document.getElementById("form-estado"),
-        cep: document.getElementById("form-cep"),
-      };
-
-      botoes.forEach((btn) => {
-        btn.addEventListener("click", () => {
-          botoes.forEach((b) => b.classList.remove("ativo"));
-          btn.classList.add("ativo");
-
-          Object.values(formularios).forEach((f) => (f.style.display = "none"));
-
-          const id = btn.id.replace("btn-", "");
-          const form = formularios[id];
-          if (form) {
-            document.body.classList.add("header-top");
-            form.style.display = "flex";
-            form.scrollIntoView({ behavior: "smooth" });
-          }
-        });
-      });
-
-      const cepInput = document.getElementById("cep");
-      const erroCep = document.querySelector(".erro-cep");
-
-      if (cepInput) {
-        cepInput.addEventListener("input", () => {
-          const cepValue = cepInput.value;
-          const cepRegex = /^\d{5}-\d{3}$/;
-          if (cepValue && !cepRegex.test(cepValue)) {
-            erroCep.style.display = "block";
-            cepInput.setCustomValidity("CEP inválido");
-          } else {
-            erroCep.style.display = "none";
-            cepInput.setCustomValidity("");
-          }
-        });
       }
     </script>
   </body>
