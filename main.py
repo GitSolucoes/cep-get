@@ -10,6 +10,7 @@ import tempfile
 import re
 from dotenv import load_dotenv
 import requests
+import logging
 
 load_dotenv()
 
@@ -19,6 +20,9 @@ templates = Jinja2Templates(directory="templates")
 
 BITRIX_API_BASE = "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5"
 
+# Configura o log
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def get_conn():
     return psycopg2.connect(
@@ -29,24 +33,25 @@ def get_conn():
         port=os.getenv("DB_PORT"),
     )
 
-
 def get_categories():
     try:
         resp = requests.get(f"{BITRIX_API_BASE}/crm.category.list", params={"entityTypeId": 2})
+        resp.raise_for_status()
         data = resp.json()
         return {cat["id"]: cat["name"] for cat in data.get("result", {}).get("categories", [])}
-    except:
+    except Exception as e:
+        logger.error(f"Erro ao buscar categorias do Bitrix: {e}")
         return {}
-
 
 def get_stages(category_id):
     try:
         resp = requests.get(f"{BITRIX_API_BASE}/crm.dealcategory.stage.list", params={"id": category_id})
+        resp.raise_for_status()
         data = resp.json()
         return {stage["STATUS_ID"]: stage["NAME"] for stage in data.get("result", [])}
-    except:
+    except Exception as e:
+        logger.error(f"Erro ao buscar stages do Bitrix (categoria {category_id}): {e}")
         return {}
-
 
 def buscar_por_cep(cep):
     cep_limpo = re.sub(r'\D', '', cep)
@@ -108,7 +113,6 @@ def buscar_por_cep(cep):
         })
     return resultados
 
-
 def buscar_varios_ceps(lista_ceps):
     ceps_limpos = [c.replace("-", "").strip() for c in lista_ceps if c.strip()]
     with get_conn() as conn:
@@ -169,7 +173,6 @@ def buscar_varios_ceps(lista_ceps):
         })
     return resultados
 
-
 async def extrair_ceps_arquivo(arquivo: UploadFile):
     nome = arquivo.filename.lower()
     conteudo = await arquivo.read()
@@ -191,11 +194,9 @@ async def extrair_ceps_arquivo(arquivo: UploadFile):
                 break
     return ceps
 
-
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
-
 
 @app.post("/buscar")
 async def buscar(
@@ -250,7 +251,6 @@ async def buscar(
             content={"error": "Nenhum CEP ou arquivo enviado."},
             status_code=400,
         )
-
 
 if __name__ == "__main__":
     import uvicorn
