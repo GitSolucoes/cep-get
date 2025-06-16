@@ -300,9 +300,3 @@ def baixar_todos_dados():
 
     conn.close()
     return todos
-
-
-if __name__ == "__main__":
-    print("🚀 Iniciando atualização dos deals...")
-    baixar_todos_dados()
-    print("✅ Deals atualizados.")
