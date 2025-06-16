@@ -53,6 +53,13 @@ def get_stages(category_id):
         logger.error(f"Erro ao buscar stages do Bitrix (categoria {category_id}): {e}")
         return {}
 
+def formatar_dado(dado):
+    if dado is None:
+        return "N/A"
+    if isinstance(dado, str):
+        return dado.strip() or "N/A"
+    return str(dado)
+
 def buscar_por_cep(cep):
     cep_limpo = re.sub(r'\D', '', cep)
     with get_conn() as conn:
@@ -60,12 +67,18 @@ def buscar_por_cep(cep):
             cur.execute(
                 """
                 SELECT 
-                    "id", "title", "stage_id", "category_id", "uf_crm_cep", 
+                    "id", "title", "stage_id", "category_id", 
+                    TRIM("uf_crm_cep") as uf_crm_cep, 
                     "uf_crm_contato", "date_create", "contato01", "contato02", 
-                    "ordem_de_servico", "nome_do_cliente", "nome_da_mae", 
+                    "ordem_de_servico", 
+                    TRIM("nome_do_cliente") as nome_do_cliente,
+                    "nome_da_mae", 
                     "data_de_vencimento", "email", "cpf", "rg", "referencia", 
-                    "rua", "data_de_instalacao", "quais_operadoras_tem_viabilidade",
-                    "uf_crm_bairro", "uf_crm_cidade", "uf_crm_numero", "uf_crm_uf"
+                    TRIM("rua") as rua,
+                    "data_de_instalacao", "quais_operadoras_tem_viabilidade",
+                    TRIM("uf_crm_bairro") as uf_crm_bairro,
+                    TRIM("uf_crm_cidade") as uf_crm_cidade,
+                    "uf_crm_numero", "uf_crm_uf"
                 FROM deals
                 WHERE regexp_replace("uf_crm_cep", '[^0-9]', '', 'g') = %s;
                 """,
@@ -87,29 +100,29 @@ def buscar_por_cep(cep):
 
         resultados.append({
             "id": r[0],
-            "cliente": r[1],
-            "fase": fase_nome,
-            "categoria": categoria_nome,
-            "uf_crm_cep": r[4],
-            "contato": r[5],
-            "criado_em": r[6].isoformat() if hasattr(r[6], "isoformat") else str(r[6]),
-            "contato01": r[7],
-            "contato02": r[8],
-            "ordem_de_servico": r[9],
-            "nome_do_cliente": r[10],
-            "nome_da_mae": r[11],
-            "data_de_vencimento": r[12],
-            "email": r[13],
-            "cpf": r[14],
-            "rg": r[15],
-            "referencia": r[16],
-            "rua": r[17],
-            "data_de_instalacao": r[18],
-            "quais_operadoras_tem_viabilidade": r[19],
-            "uf_crm_bairro": r[20],
-            "uf_crm_cidade": r[21],
-            "uf_crm_numero": r[22],
-            "uf_crm_uf": r[23],
+            "cliente": formatar_dado(r[1]),
+            "fase": formatar_dado(fase_nome),
+            "categoria": formatar_dado(categoria_nome),
+            "uf_crm_cep": formatar_dado(r[4]),
+            "contato": formatar_dado(r[5]),
+            "criado_em": r[6].isoformat() if hasattr(r[6], "isoformat") else formatar_dado(r[6]),
+            "contato01": formatar_dado(r[7]),
+            "contato02": formatar_dado(r[8]),
+            "ordem_de_servico": formatar_dado(r[9]),
+            "nome_do_cliente": formatar_dado(r[10]),
+            "nome_da_mae": formatar_dado(r[11]),
+            "data_de_vencimento": formatar_dado(r[12]),
+            "email": formatar_dado(r[13]),
+            "cpf": formatar_dado(r[14]),
+            "rg": formatar_dado(r[15]),
+            "referencia": formatar_dado(r[16]),
+            "rua": formatar_dado(r[17]),
+            "data_de_instalacao": formatar_dado(r[18]),
+            "quais_operadoras_tem_viabilidade": formatar_dado(r[19]),
+            "uf_crm_bairro": formatar_dado(r[20]),
+            "uf_crm_cidade": formatar_dado(r[21]),
+            "uf_crm_numero": formatar_dado(r[22]),
+            "uf_crm_uf": formatar_dado(r[23]),
         })
     return resultados
 
@@ -120,12 +133,18 @@ def buscar_varios_ceps(lista_ceps):
             cur.execute(
                 """
                 SELECT 
-                    "id", "title", "stage_id", "category_id", "uf_crm_cep", 
+                    "id", "title", "stage_id", "category_id", 
+                    TRIM("uf_crm_cep") as uf_crm_cep, 
                     "uf_crm_contato", "date_create", "contato01", "contato02", 
-                    "ordem_de_servico", "nome_do_cliente", "nome_da_mae", 
+                    "ordem_de_servico", 
+                    TRIM("nome_do_cliente") as nome_do_cliente,
+                    "nome_da_mae", 
                     "data_de_vencimento", "email", "cpf", "rg", "referencia", 
-                    "rua", "data_de_instalacao", "quais_operadoras_tem_viabilidade",
-                    "uf_crm_bairro", "uf_crm_cidade", "uf_crm_numero", "uf_crm_uf"
+                    TRIM("rua") as rua,
+                    "data_de_instalacao", "quais_operadoras_tem_viabilidade",
+                    TRIM("uf_crm_bairro") as uf_crm_bairro,
+                    TRIM("uf_crm_cidade") as uf_crm_cidade,
+                    "uf_crm_numero", "uf_crm_uf"
                 FROM deals
                 WHERE replace("uf_crm_cep", '-', '') = ANY(%s);
                 """,
@@ -147,29 +166,29 @@ def buscar_varios_ceps(lista_ceps):
 
         resultados.append({
             "id": r[0],
-            "cliente": r[1],
-            "fase": fase_nome,
-            "categoria": categoria_nome,
-            "uf_crm_cep": r[4],
-            "contato": r[5],
-            "criado_em": r[6].isoformat() if hasattr(r[6], "isoformat") else str(r[6]),
-            "contato01": r[7],
-            "contato02": r[8],
-            "ordem_de_servico": r[9],
-            "nome_do_cliente": r[10],
-            "nome_da_mae": r[11],
-            "data_de_vencimento": r[12],
-            "email": r[13],
-            "cpf": r[14],
-            "rg": r[15],
-            "referencia": r[16],
-            "rua": r[17],
-            "data_de_instalacao": r[18],
-            "quais_operadoras_tem_viabilidade": r[19],
-            "uf_crm_bairro": r[20],
-            "uf_crm_cidade": r[21],
-            "uf_crm_numero": r[22],
-            "uf_crm_uf": r[23],
+            "cliente": formatar_dado(r[1]),
+            "fase": formatar_dado(fase_nome),
+            "categoria": formatar_dado(categoria_nome),
+            "uf_crm_cep": formatar_dado(r[4]),
+            "contato": formatar_dado(r[5]),
+            "criado_em": r[6].isoformat() if hasattr(r[6], "isoformat") else formatar_dado(r[6]),
+            "contato01": formatar_dado(r[7]),
+            "contato02": formatar_dado(r[8]),
+            "ordem_de_servico": formatar_dado(r[9]),
+            "nome_do_cliente": formatar_dado(r[10]),
+            "nome_da_mae": formatar_dado(r[11]),
+            "data_de_vencimento": formatar_dado(r[12]),
+            "email": formatar_dado(r[13]),
+            "cpf": formatar_dado(r[14]),
+            "rg": formatar_dado(r[15]),
+            "referencia": formatar_dado(r[16]),
+            "rua": formatar_dado(r[17]),
+            "data_de_instalacao": formatar_dado(r[18]),
+            "quais_operadoras_tem_viabilidade": formatar_dado(r[19]),
+            "uf_crm_bairro": formatar_dado(r[20]),
+            "uf_crm_cidade": formatar_dado(r[21]),
+            "uf_crm_numero": formatar_dado(r[22]),
+            "uf_crm_uf": formatar_dado(r[23]),
         })
     return resultados
 
