@@ -64,15 +64,14 @@ def buscar_por_cep(cep):
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT id, title, stage_id, category_id, uf_crm_cep as cep, uf_crm_contato, date_create, 
-                       contato01, contato02, ordem_de_servico, nome_do_cliente,
-                       nome_da_mae, data_de_vencimento, email, cpf, rg, referencia, rua, 
-                       data_de_instalacao, quais_operadoras_tem_viabilidade
+                SELECT "id", "title", "stage_id", "category_id", "uf_crm_cep", "uf_crm_contato", "date_create", "contato01", "contato02", "ordem_de_servico", "nome_do_cliente",
+                "nome_da_mae", "data_de_vencimento", "email", "cpf", "rg", "referencia", "rua", "data_de_instalacao", "quais_operadoras_tem_viabilidade"
                 FROM deals
-                WHERE replace(replace(uf_crm_cep, '-', ''), '.', '') = %s;
+                WHERE regexp_replace("uf_crm_cep", '[^0-9]', '', 'g') = %s;
                 """,
                 (cep_limpo,),
             )
+            
             rows = cur.fetchall()
 
     categorias = get_categories()
