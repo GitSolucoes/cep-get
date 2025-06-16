@@ -59,21 +59,22 @@ def get_stages(category_id):
 
 
 def buscar_por_cep(cep):
-    cep_limpo = cep.replace("-", "").strip()
+    cep_limpo = cep.replace("-", "").replace(".", "").strip()  # Remove hífens e pontos
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT "id", "title", "stage_id", "category_id", "uf_crm_cep", "uf_crm_contato", "date_create", "contato01", "contato02", "ordem_de_servico", "nome_do_cliente",
-            "nome_da_mae", "data_de_vencimento", "email", "cpf", "rg", "referencia", "rua", "data_de_instalacao", "quais_operadoras_tem_viabilidade"
+                SELECT id, title, stage_id, category_id, uf_crm_cep as cep, uf_crm_contato, date_create, 
+                       contato01, contato02, ordem_de_servico, nome_do_cliente,
+                       nome_da_mae, data_de_vencimento, email, cpf, rg, referencia, rua, 
+                       data_de_instalacao, quais_operadoras_tem_viabilidade
                 FROM deals
-                WHERE replace("uf_crm_cep", '-', '') = %s;
-            """,
+                WHERE replace(replace(uf_crm_cep, '-', ''), '.', '') = %s;
+                """,
                 (cep_limpo,),
             )
             rows = cur.fetchall()
 
-    # Carrega categorias e inicializa cache stages
     categorias = get_categories()
     stages_cache = {}
 
