@@ -12,6 +12,7 @@ import pandas as pd
 import psycopg2
 import os
 import tempfile
+import re
 from dotenv import load_dotenv
 import requests
 
