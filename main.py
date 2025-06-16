@@ -256,3 +256,9 @@ async def buscar(
         return JSONResponse(
             content={"error": "Nenhum CEP ou arquivo enviado."}, status_code=400
         )
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=1433, reload=True)
+
