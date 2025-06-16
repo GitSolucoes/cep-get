@@ -59,7 +59,7 @@ def get_stages(category_id):
 
 
 def buscar_por_cep(cep):
-    cep_limpo = cep.replace("-", "").replace(".", "").strip()  # Remove hífens e pontos
+    cep_limpo = re.sub(r'\D', '', cep)
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -71,7 +71,6 @@ def buscar_por_cep(cep):
                 """,
                 (cep_limpo,),
             )
-            
             rows = cur.fetchall()
 
     categorias = get_categories()
