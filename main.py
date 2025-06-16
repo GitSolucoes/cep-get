@@ -1,10 +1,5 @@
 from fastapi import FastAPI, Request, Form, UploadFile, File
-from fastapi.responses import (
-    HTMLResponse,
-    JSONResponse,
-    StreamingResponse,
-    FileResponse,
-)
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import io
@@ -21,6 +16,7 @@ load_dotenv()
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
 BITRIX_API_BASE = "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1ry4k59b5"
 
 
@@ -36,23 +32,16 @@ def get_conn():
 
 def get_categories():
     try:
-        resp = requests.get(
-            f"{BITRIX_API_BASE}/crm.category.list", params={"entityTypeId": 2}
-        )
+        resp = requests.get(f"{BITRIX_API_BASE}/crm.category.list", params={"entityTypeId": 2})
         data = resp.json()
-        return {
-            cat["id"]: cat["name"]
-            for cat in data.get("result", {}).get("categories", [])
-        }
+        return {cat["id"]: cat["name"] for cat in data.get("result", {}).get("categories", [])}
     except:
         return {}
 
 
 def get_stages(category_id):
     try:
-        resp = requests.get(
-            f"{BITRIX_API_BASE}/crm.dealcategory.stage.list", params={"id": category_id}
-        )
+        resp = requests.get(f"{BITRIX_API_BASE}/crm.dealcategory.stage.list", params={"id": category_id})
         data = resp.json()
         return {stage["STATUS_ID"]: stage["NAME"] for stage in data.get("result", [])}
     except:
@@ -65,8 +54,13 @@ def buscar_por_cep(cep):
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT "id", "title", "stage_id", "category_id", "uf_crm_cep", "uf_crm_contato", "date_create", "contato01", "contato02", "ordem_de_servico", "nome_do_cliente",
-                "nome_da_mae", "data_de_vencimento", "email", "cpf", "rg", "referencia", "rua", "data_de_instalacao", "quais_operadoras_tem_viabilidade"
+                SELECT 
+                    "id", "title", "stage_id", "category_id", "uf_crm_cep", 
+                    "uf_crm_contato", "date_create", "contato01", "contato02", 
+                    "ordem_de_servico", "nome_do_cliente", "nome_da_mae", 
+                    "data_de_vencimento", "email", "cpf", "rg", "referencia", 
+                    "rua", "data_de_instalacao", "quais_operadoras_tem_viabilidade",
+                    "uf_crm_bairro", "uf_crm_cidade", "uf_crm_numero", "uf_crm_uf"
                 FROM deals
                 WHERE regexp_replace("uf_crm_cep", '[^0-9]', '', 'g') = %s;
                 """,
@@ -82,37 +76,36 @@ def buscar_por_cep(cep):
         cat_id = r[3]
         categoria_nome = categorias.get(cat_id, str(cat_id))
 
-        # Carrega estágios da categoria (cache)
         if cat_id not in stages_cache:
             stages_cache[cat_id] = get_stages(cat_id)
-        fase_nome = stages_cache[cat_id].get(r[2], r[2])  # r[2] é stage_id
+        fase_nome = stages_cache[cat_id].get(r[2], r[2])
 
-        resultados.append(
-            {
-                "id": r[0],
-                "cliente": r[1],
-                "fase": fase_nome,
-                "categoria": categoria_nome,
-                "cep": r[4],
-                "contato": r[5],
-                "criado_em": (
-                    r[6].isoformat() if hasattr(r[6], "isoformat") else str(r[6])
-                ),
-                "contato01": r[8],
-                "contato02": r[9],
-                "ordem_de_servico": r[10],
-                "nome_do_cliente": r[11],
-                "nome_da_mae": r[12],
-                "data_de_vencimento": r[13],
-                "email": r[14],
-                "cpf": r[15],
-                "rg": r[16],
-                "referencia": r[17],
-                "rua": r[18],
-                "data_de_instalacao": r[19],
-                "quais_operadoras_tem_viabilidade": r[20],
-            }
-        )
+        resultados.append({
+            "id": r[0],
+            "cliente": r[1],
+            "fase": fase_nome,
+            "categoria": categoria_nome,
+            "uf_crm_cep": r[4],
+            "contato": r[5],
+            "criado_em": r[6].isoformat() if hasattr(r[6], "isoformat") else str(r[6]),
+            "contato01": r[7],
+            "contato02": r[8],
+            "ordem_de_servico": r[9],
+            "nome_do_cliente": r[10],
+            "nome_da_mae": r[11],
+            "data_de_vencimento": r[12],
+            "email": r[13],
+            "cpf": r[14],
+            "rg": r[15],
+            "referencia": r[16],
+            "rua": r[17],
+            "data_de_instalacao": r[18],
+            "quais_operadoras_tem_viabilidade": r[19],
+            "uf_crm_bairro": r[20],
+            "uf_crm_cidade": r[21],
+            "uf_crm_numero": r[22],
+            "uf_crm_uf": r[23],
+        })
     return resultados
 
 
@@ -122,12 +115,17 @@ def buscar_varios_ceps(lista_ceps):
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT "id", "title", "stage_id", "category_id", "uf_crm_cep", "uf_crm_contato", "date_create", "contato01", "contato02", "ordem_de_servico", "nome_do_cliente",
-            "nome_da_mae", "data_de_vencimento", "email", "cpf", "rg", "referencia", "rua", "data_de_instalacao", "quais_operadoras_tem_viabilidade"
+                SELECT 
+                    "id", "title", "stage_id", "category_id", "uf_crm_cep", 
+                    "uf_crm_contato", "date_create", "contato01", "contato02", 
+                    "ordem_de_servico", "nome_do_cliente", "nome_da_mae", 
+                    "data_de_vencimento", "email", "cpf", "rg", "referencia", 
+                    "rua", "data_de_instalacao", "quais_operadoras_tem_viabilidade",
+                    "uf_crm_bairro", "uf_crm_cidade", "uf_crm_numero", "uf_crm_uf"
                 FROM deals
                 WHERE replace("uf_crm_cep", '-', '') = ANY(%s);
-            """,
-                (ceps_limpos),
+                """,
+                (ceps_limpos,),
             )
             rows = cur.fetchall()
 
@@ -143,32 +141,32 @@ def buscar_varios_ceps(lista_ceps):
             stages_cache[cat_id] = get_stages(cat_id)
         fase_nome = stages_cache[cat_id].get(r[2], r[2])
 
-        resultados.append(
-            {
-                "id": r[0],
-                "cliente": r[1],
-                "fase": fase_nome,
-                "categoria": categoria_nome,
-                "uf_crm_cep": r[4],
-                "contato": r[5],
-                "criado_em": (
-                    r[6].isoformat() if hasattr(r[6], "isoformat") else str(r[6])
-                ),
-                "contato01": r[8],
-                "contato02": r[9],
-                "ordem_de_servico": r[10],
-                "nome_do_cliente": r[11],
-                "nome_da_mae": r[12],
-                "data_de_vencimento": r[13],
-                "email": r[14],
-                "cpf": r[15],
-                "rg": r[16],
-                "referencia": r[17],
-                "rua": r[18],
-                "data_de_instalacao": r[19],
-                "quais_operadoras_tem_viabilidade": r[20],
-            }
-        )
+        resultados.append({
+            "id": r[0],
+            "cliente": r[1],
+            "fase": fase_nome,
+            "categoria": categoria_nome,
+            "uf_crm_cep": r[4],
+            "contato": r[5],
+            "criado_em": r[6].isoformat() if hasattr(r[6], "isoformat") else str(r[6]),
+            "contato01": r[7],
+            "contato02": r[8],
+            "ordem_de_servico": r[9],
+            "nome_do_cliente": r[10],
+            "nome_da_mae": r[11],
+            "data_de_vencimento": r[12],
+            "email": r[13],
+            "cpf": r[14],
+            "rg": r[15],
+            "referencia": r[16],
+            "rua": r[17],
+            "data_de_instalacao": r[18],
+            "quais_operadoras_tem_viabilidade": r[19],
+            "uf_crm_bairro": r[20],
+            "uf_crm_cidade": r[21],
+            "uf_crm_numero": r[22],
+            "uf_crm_uf": r[23],
+        })
     return resultados
 
 
@@ -201,7 +199,9 @@ async def index(request: Request):
 
 @app.post("/buscar")
 async def buscar(
-    cep: str = Form(None), arquivo: UploadFile = File(None), formato: str = Form("txt")
+    cep: str = Form(None),
+    arquivo: UploadFile = File(None),
+    formato: str = Form("txt"),
 ):
     if cep and (arquivo and arquivo.filename != ""):
         return JSONResponse(
@@ -213,7 +213,8 @@ async def buscar(
         ceps = await extrair_ceps_arquivo(arquivo)
         if not ceps:
             return JSONResponse(
-                content={"error": "Nenhum CEP encontrado no arquivo."}, status_code=400
+                content={"error": "Nenhum CEP encontrado no arquivo."},
+                status_code=400,
             )
 
         resultados = buscar_varios_ceps(ceps)
@@ -233,33 +234,24 @@ async def buscar(
         else:
             output = io.StringIO()
             for res in resultados:
-                output.write(
-                    f"ID: {res['id']} | Cliente: {res['cliente']} | Fase: {res['fase']} | Categoria: {res['categoria']} | CEP: {res['uf_crm_cep']} | Contato: {res['contato']} | \
-                          Criado em: {res['criado_em']} | Contato 01: {res['contato01']} | Contato 02: {res['contato02']} | Ordem de Serviço: {res['ordem_de_servico']} \
-                             | Nome do Cliente: {res['nome_do_cliente']} | Nome da Mãe: {res['nome_da_mae']} | Data de Vencimento: {res['data_de_vencimento']} | Email: {res['email']} \
-                                 | CPF: {res['cpf']} | RG: {res['rg']} | Referência: {res['referencia']} | Rua: {res['rua']} | Data de Instalação: {res['data_de_instalacao']} | Quais operadoras tem viabilidade: {res['quais_operadoras_tem_viabilidade']} \n"
-                )
+                output.write(str(res) + "\n")
             output.seek(0)
-
             headers = {"Content-Disposition": 'attachment; filename="resultado.txt"'}
-
             return StreamingResponse(output, media_type="text/plain", headers=headers)
 
     elif cep:
         resultados = buscar_por_cep(cep)
-        if not resultados:
-            resultados = []
         return JSONResponse(
             content={"total": len(resultados), "resultados": resultados}
         )
 
     else:
         return JSONResponse(
-            content={"error": "Nenhum CEP ou arquivo enviado."}, status_code=400
+            content={"error": "Nenhum CEP ou arquivo enviado."},
+            status_code=400,
         )
 
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=1433, reload=True)
-
