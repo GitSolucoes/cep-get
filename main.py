@@ -128,4 +128,6 @@ async def bitrix_webhook(request: Request):
         return JSONResponse({"error": str(e)}, status_code=500)
 
 
-print("🚀 Servidor pronto!")
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("main:app", host="0.0.0.0", port=1433, reload=True)
