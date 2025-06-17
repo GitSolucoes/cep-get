@@ -52,6 +52,48 @@ def get_stages(category_id):
         logger.error(f"Erro ao buscar stages do Bitrix (categoria {category_id}): {e}")
         return {}
 
+
+def buscar_por_bairro(bairro):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                'SELECT * FROM deals WHERE "uf_crm_bairro" ILIKE %s;',
+                (f"%{bairro.strip()}%",)
+            )
+            rows = cur.fetchall()
+    return montar_resultado(rows)
+
+def buscar_por_rua(rua):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                'SELECT * FROM deals WHERE rua ILIKE %s;',
+                (f"%{rua.strip()}%",)
+            )
+            rows = cur.fetchall()
+    return montar_resultado(rows)
+
+def buscar_por_cidade(cidade):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                'SELECT * FROM deals WHERE "uf_crm_cidade" ILIKE %s;',
+                (f"%{cidade.strip()}%",)
+            )
+            rows = cur.fetchall()
+    return montar_resultado(rows)
+
+def buscar_por_estado(estado):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                'SELECT * FROM deals WHERE "uf_crm_uf" ILIKE %s;',
+                (f"%{estado.strip()}%",)
+            )
+            rows = cur.fetchall()
+    return montar_resultado(rows)
+
+
 def montar_resultado(rows):
     categorias = get_categories()
     stages_cache = {}
