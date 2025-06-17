@@ -24,16 +24,10 @@
   </header>
 
   <main>
-    <!-- Formulários -->
     <section id="form-rua" class="form-busca" style="display: none; flex-direction: column; align-items: center;">
       <form id="rua-form" class="formulario fade-in">
         <h2>Consulta por Rua</h2>
-        <input type="text" id="rua" class="form-campo" placeholder="Digite a rua..." />
-        <input type="file" id="arquivo-rua" class="form-campo" accept=".txt,.csv,.xlsx" />
-        <select id="formato-rua" class="form-campo">
-          <option value="txt">TXT</option>
-          <option value="xlsx">Excel</option>
-        </select>
+        <input type="text" id="rua" name="rua" class="form-campo" placeholder="Digite a rua..." required />
         <button type="submit" class="form-botao">Buscar</button>
         <div id="carregando-rua" style="display:none;">Carregando...</div>
       </form>
@@ -42,12 +36,7 @@
     <section id="form-bairro" class="form-busca" style="display: none; flex-direction: column; align-items: center;">
       <form id="bairro-form" class="formulario fade-in">
         <h2>Consulta por Bairro</h2>
-        <input type="text" id="bairro" class="form-campo" placeholder="Digite o bairro..." />
-        <input type="file" id="arquivo-bairro" class="form-campo" accept=".txt,.csv,.xlsx" />
-        <select id="formato-bairro" class="form-campo">
-          <option value="txt">TXT</option>
-          <option value="xlsx">Excel</option>
-        </select>
+        <input type="text" id="bairro" name="bairro" class="form-campo" placeholder="Digite o bairro..." required />
         <button type="submit" class="form-botao">Buscar</button>
         <div id="carregando-bairro" style="display:none;">Carregando...</div>
       </form>
@@ -56,12 +45,7 @@
     <section id="form-cidade" class="form-busca" style="display: none; flex-direction: column; align-items: center;">
       <form id="cidade-form" class="formulario fade-in">
         <h2>Consulta por Cidade</h2>
-        <input type="text" id="cidade" class="form-campo" placeholder="Digite a cidade..." />
-        <input type="file" id="arquivo-cidade" class="form-campo" accept=".txt,.csv,.xlsx" />
-        <select id="formato-cidade" class="form-campo">
-          <option value="txt">TXT</option>
-          <option value="xlsx">Excel</option>
-        </select>
+        <input type="text" id="cidade" name="cidade" class="form-campo" placeholder="Digite a cidade..." required />
         <button type="submit" class="form-botao">Buscar</button>
         <div id="carregando-cidade" style="display:none;">Carregando...</div>
       </form>
@@ -70,12 +54,7 @@
     <section id="form-estado" class="form-busca" style="display: none; flex-direction: column; align-items: center;">
       <form id="estado-form" class="formulario fade-in">
         <h2>Consulta por Estado</h2>
-        <input type="text" id="estado" class="form-campo" placeholder="Digite o estado..." />
-        <input type="file" id="arquivo-estado" class="form-campo" accept=".txt,.csv,.xlsx" />
-        <select id="formato-estado" class="form-campo">
-          <option value="txt">TXT</option>
-          <option value="xlsx">Excel</option>
-        </select>
+        <input type="text" id="estado" name="estado" class="form-campo" placeholder="Digite o estado..." required />
         <button type="submit" class="form-botao">Buscar</button>
         <div id="carregando-estado" style="display:none;">Carregando...</div>
       </form>
@@ -84,15 +63,21 @@
     <section id="form-cep" class="form-busca" style="display: none; flex-direction: column; align-items: center;">
       <form id="cep-form" class="formulario fade-in">
         <h2>Consulta de CEPs</h2>
-        <label>Digite o CEP:</label>
-        <input type="text" id="cep" class="form-campo" />
-        <label>Ou envie um arquivo (.txt, .csv, .xlsx):</label>
-        <input type="file" id="arquivo-cep" class="form-campo" accept=".txt,.csv,.xlsx" />
-        <label>Formato de Download:</label>
-        <select id="formato-cep" class="form-campo">
-          <option value="txt">TXT</option>
-          <option value="xlsx">Excel</option>
-        </select>
+        <div>
+          <label for="cep" class="form-label">Digite o CEP:</label>
+          <input type="text" id="cep" name="cep" class="form-campo" />
+        </div>
+        <div>
+          <label for="arquivo-cep" class="form-label">Ou envie um arquivo (.txt, .csv, .xlsx):</label>
+          <input type="file" id="arquivo-cep" name="arquivo" class="form-campo" accept=".txt,.csv,.xlsx" />
+        </div>
+        <div>
+          <label for="formato-cep" class="form-label">Formato de Download:</label>
+          <select id="formato-cep" name="formato" class="form-campo">
+            <option value="txt">TXT</option>
+            <option value="xlsx">Excel</option>
+          </select>
+        </div>
         <button type="submit" class="form-botao">Buscar</button>
         <div id="carregando-cep" style="display:none;">Carregando...</div>
       </form>
@@ -102,45 +87,74 @@
   <div id="resultado"></div>
 
   <script>
-    const formularios = ['cep', 'rua', 'bairro', 'cidade', 'estado'];
-
-    document.querySelectorAll(".btn-opcao").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".form-busca").forEach(f => f.style.display = "none");
-        document.querySelectorAll(".btn-opcao").forEach(b => b.classList.remove("ativo"));
-        btn.classList.add("ativo");
-        const tipo = btn.id.replace("btn-", "");
-        document.getElementById(`form-${tipo}`).style.display = "flex";
-        document.getElementById(`form-${tipo}`).scrollIntoView({ behavior: 'smooth' });
-      });
-    });
-
-    function montarCards(resultados) {
+    async function buscarGenerico(endpoint, valor, carregandoId) {
+      const carregando = document.getElementById(carregandoId);
       const resultadoDiv = document.getElementById("resultado");
+
+      carregando.style.display = "block";
       resultadoDiv.innerHTML = "";
-      resultados.forEach(res => {
-        const card = document.createElement("div");
-        card.className = "resultado-card";
-        card.innerHTML = `
-          <div class="card-section">
-            <p><strong>Cliente:</strong> ${res.cliente}</p>
-            <p><strong>CEP:</strong> ${res.uf_crm_cep}</p>
-            <p><strong>Categoria:</strong> ${res.categoria}</p>
-            <p><strong>Fase:</strong> ${res.fase}</p>
-          </div>`;
-        resultadoDiv.appendChild(card);
-      });
+
+      const response = await fetch(`${endpoint}?${endpoint.split("-")[1]}=${encodeURIComponent(valor)}`);
+
+      carregando.style.display = "none";
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.resultados?.length > 0) {
+          data.resultados.forEach((res) => {
+            const card = document.createElement("div");
+            card.className = "resultado-card";
+            card.innerHTML = `
+              <div class="card-section">
+                <p><strong>Cliente:</strong> ${res.cliente}</p>
+                <p><strong>CEP:</strong> ${res.uf_crm_cep}</p>
+                <p><strong>Categoria:</strong> ${res.categoria}</p>
+                <p><strong>Fase:</strong> ${res.fase}</p>
+              </div>`;
+            resultadoDiv.appendChild(card);
+          });
+        } else {
+          resultadoDiv.innerHTML = '<div class="nenhum-resultado">Nenhum resultado encontrado.</div>';
+        }
+      } else {
+        resultadoDiv.innerHTML = '<div class="nenhum-resultado">Erro na consulta.</div>';
+      }
     }
 
-    formularios.forEach(tipo => {
-      const form = document.getElementById(`${tipo}-form`);
-      form.addEventListener("submit", async (e) => {
+    window.addEventListener("DOMContentLoaded", () => {
+      const botoes = document.querySelectorAll(".btn-opcao");
+      const formularios = {
+        rua: document.getElementById("form-rua"),
+        bairro: document.getElementById("form-bairro"),
+        cidade: document.getElementById("form-cidade"),
+        estado: document.getElementById("form-estado"),
+        cep: document.getElementById("form-cep"),
+      };
+
+      botoes.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          botoes.forEach((b) => b.classList.remove("ativo"));
+          btn.classList.add("ativo");
+
+          Object.values(formularios).forEach((f) => f.style.display = "none");
+          const id = btn.id.replace("btn-", "");
+          const form = formularios[id];
+          if (form) {
+            form.style.display = "flex";
+            form.scrollIntoView({ behavior: "smooth" });
+          }
+        });
+      });
+
+      document.getElementById("cep-form").addEventListener("submit", async (e) => {
         e.preventDefault();
 
-        const valor = document.getElementById(tipo).value.trim();
-        const arquivo = document.getElementById(`arquivo-${tipo}`).files[0];
-        const formato = document.getElementById(`formato-${tipo}`).value;
-        const carregando = document.getElementById(`carregando-${tipo}`);
+        let cep = document.getElementById("cep").value;
+        cep = cep.replace(/\D/g, "");
+
+        const arquivo = document.getElementById("arquivo-cep").files[0];
+        const formato = document.getElementById("formato-cep").value;
+        const carregando = document.getElementById("carregando-cep");
         const resultadoDiv = document.getElementById("resultado");
 
         carregando.style.display = "block";
@@ -150,13 +164,13 @@
         if (arquivo) {
           formData.append("arquivo", arquivo);
         } else {
-          formData.append(tipo, valor);
+          formData.append("cep", cep);
         }
         formData.append("formato", formato);
 
-        const response = await fetch(tipo === 'cep' ? '/buscar' : `/buscar-${tipo}`, {
-          method: tipo === 'cep' ? 'POST' : 'POST',
-          body: formData
+        const response = await fetch("/buscar", {
+          method: "POST",
+          body: formData,
         });
 
         carregando.style.display = "none";
@@ -168,17 +182,47 @@
             link.href = window.URL.createObjectURL(blob);
             link.download = "resultado.xlsx";
             link.click();
+            resultadoDiv.innerHTML = '<div class="download-msg">Download concluído!</div>';
           } else {
             const data = await response.json();
             if (data.resultados?.length > 0) {
-              montarCards(data.resultados);
+              data.resultados.forEach((res) => {
+                const card = document.createElement("div");
+                card.className = "resultado-card";
+                card.innerHTML = `
+                  <div class="card-section">
+                    <p><strong>Cliente:</strong> ${res.cliente}</p>
+                    <p><strong>CEP:</strong> ${res.uf_crm_cep}</p>
+                    <p><strong>Categoria:</strong> ${res.categoria}</p>
+                    <p><strong>Fase:</strong> ${res.fase}</p>
+                  </div>`;
+                resultadoDiv.appendChild(card);
+              });
             } else {
               resultadoDiv.innerHTML = '<div class="nenhum-resultado">Nenhum resultado encontrado.</div>';
             }
           }
         } else {
-          resultadoDiv.innerHTML = '<div class="nenhum-resultado">Erro ao consultar.</div>';
+          const erro = await response.json();
+          resultadoDiv.innerHTML = `<div class="nenhum-resultado">Erro: ${erro.error || "Erro desconhecido."}</div>`;
         }
+      });
+
+      document.getElementById("rua-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        buscarGenerico("/buscar-rua", document.getElementById("rua").value, "carregando-rua");
+      });
+      document.getElementById("bairro-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        buscarGenerico("/buscar-bairro", document.getElementById("bairro").value, "carregando-bairro");
+      });
+      document.getElementById("cidade-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        buscarGenerico("/buscar-cidade", document.getElementById("cidade").value, "carregando-cidade");
+      });
+      document.getElementById("estado-form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        buscarGenerico("/buscar-estado", document.getElementById("estado").value, "carregando-estado");
       });
     });
   </script>
