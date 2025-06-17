@@ -60,7 +60,7 @@
         <h2>Consulta de CEPs</h2>
         <div>
           <label for="cep" class="form-label">Digite o CEP:</label>
-          <input type="text" id="cep" name="cep" class="form-campo" placeholder="Ex: 31015-172" />
+          <input type="text" id="cep" name="cep" class="form-campo" />
         </div>
         <div>
           <label for="arquivo-cep" class="form-label">Ou envie um arquivo (.txt, .csv, .xlsx):</label>
@@ -74,9 +74,7 @@
           </select>
         </div>
         <button type="submit" class="form-botao">Buscar</button>
-        <div id="carregando-cep" class="carregando" style="display:none;">
-          <span class="loader"></span> Processando sua busca...
-        </div>
+        <div id="carregando-cep" style="display:none;">Carregando...</div>
       </form>
     </section>
   </main>
@@ -96,10 +94,6 @@
       cep: document.getElementById("form-cep"),
     };
 
-    // Ativar CEP por padrão
-    document.getElementById("btn-cep").classList.add("ativo");
-    document.getElementById("form-cep").style.display = "flex";
-
     botoes.forEach((btn) => {
       btn.addEventListener("click", () => {
         botoes.forEach((b) => b.classList.remove("ativo"));
@@ -114,15 +108,6 @@
           form.scrollIntoView({ behavior: "smooth" });
         }
       });
-    });
-
-    // Format CEP input
-    document.getElementById("cep").addEventListener("input", function(e) {
-      let value = this.value.replace(/\D/g, "");
-      if (value.length > 5) {
-        value = value.substring(0, 5) + "-" + value.substring(5, 8);
-      }
-      this.value = value;
     });
 
     // CEP submit
@@ -140,76 +125,51 @@
       carregando.style.display = "block";
       resultadoDiv.innerHTML = "";
 
-      try {
-        const formData = new FormData();
-        if (arquivo) {
-          formData.append("arquivo", arquivo);
-        } else if (cep) {
-          formData.append("cep", cep);
+      const formData = new FormData();
+      if (arquivo) {
+        formData.append("arquivo", arquivo);
+      } else {
+        formData.append("cep", cep);
+      }
+      formData.append("formato", formato);
+
+      const response = await fetch("/buscar", {
+        method: "POST",
+        body: formData,
+      });
+
+      carregando.style.display = "none";
+
+      if (response.ok) {
+        if (formato === "xlsx") {
+          const blob = await response.blob();
+          const link = document.createElement("a");
+          link.href = window.URL.createObjectURL(blob);
+          link.download = "resultado.xlsx";
+          link.click();
+          resultadoDiv.innerHTML = '<div class="download-msg">Download concluído!</div>';
         } else {
-          resultadoDiv.innerHTML = '<div class="nenhum-resultado">Por favor, informe um CEP ou selecione um arquivo.</div>';
-          carregando.style.display = "none";
-          return;
-        }
-        formData.append("formato", formato);
-
-        const response = await fetch("/buscar", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (response.ok) {
-          if (formato === "xlsx") {
-            const blob = await response.blob();
-            const link = document.createElement("a");
-            link.href = window.URL.createObjectURL(blob);
-            link.download = "resultado.xlsx";
-            link.click();
-            resultadoDiv.innerHTML = '<div class="download-msg">Download concluído! Verifique sua pasta de downloads.</div>';
+          const data = await response.json();
+          if (data.resultados?.length > 0) {
+            data.resultados.forEach((res) => {
+              const card = document.createElement("div");
+              card.className = "resultado-card";
+              card.innerHTML = `
+                <div class="card-section">
+                  <p><strong>Cliente:</strong> ${res.cliente}</p>
+                  <p><strong>CEP:</strong> ${res.cep}</p>
+                  <p><strong>Categoria:</strong> ${res.categoria}</p>
+                  <p><strong>Fase:</strong> ${res.fase}</p>
+                </div>`;
+              resultadoDiv.appendChild(card);
+            });
           } else {
-            const data = await response.json();
-            if (data.resultados?.length > 0) {
-              resultadoDiv.innerHTML = `<div class="download-msg">${data.total} resultados encontrados</div>`;
-              
-              data.resultados.forEach((res) => {
-                const card = document.createElement("div");
-                card.className = "resultado-card";
-                card.innerHTML = `
-                  <div class="card-section">
-                    <p><strong>ID:</strong> ${res.id}</p>
-                    <p><strong>Cliente:</strong> ${res.cliente}</p>
-                    <p><strong>Nome Completo:</strong> ${res.nome_do_cliente}</p>
-                  </div>
-                  <div class="card-section">
-                    <p><strong>CEP:</strong> ${res.uf_crm_cep}</p>
-                    <p><strong>Endereço:</strong> ${res.rua}, ${res.uf_crm_numero || 'S/N'}</p>
-                    <p><strong>Bairro:</strong> ${res.uf_crm_bairro}</p>
-                    <p><strong>Cidade/UF:</strong> ${res.uf_crm_cidade}/${res.uf_crm_uf}</p>
-                  </div>
-                  <div class="card-section">
-                    <p><strong>Categoria:</strong> ${res.categoria}</p>
-                    <p><strong>Fase:</strong> ${res.fase}</p>
-                    <p><strong>Criado em:</strong> ${res.criado_em}</p>
-                  </div>
-                  <div class="card-section">
-                    <p><strong>Contatos:</strong> ${res.contato01 || 'N/A'} / ${res.contato02 || 'N/A'}</p>
-                    <p><strong>Email:</strong> ${res.email || 'N/A'}</p>
-                    <p><strong>CPF/CNPJ:</strong> ${res.cpf || 'N/A'}</p>
-                  </div>`;
-                resultadoDiv.appendChild(card);
-              });
-            } else {
-              resultadoDiv.innerHTML = '<div class="nenhum-resultado">Nenhum resultado encontrado para os critérios informados.</div>';
-            }
+            resultadoDiv.innerHTML = '<div class="nenhum-resultado">Nenhum resultado encontrado.</div>';
           }
-        } else {
-          const erro = await response.json();
-          resultadoDiv.innerHTML = `<div class="nenhum-resultado">Erro: ${erro.error || "Ocorreu um erro durante a busca."}</div>`;
         }
-      } catch (error) {
-        resultadoDiv.innerHTML = `<div class="nenhum-resultado">Erro: ${error.message || "Falha na conexão com o servidor."}</div>`;
-      } finally {
-        carregando.style.display = "none";
+      } else {
+        const erro = await response.json();
+        resultadoDiv.innerHTML = `<div class="nenhum-resultado">Erro: ${erro.error || "Erro desconhecido."}</div>`;
       }
     });
   });
