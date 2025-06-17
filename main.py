@@ -262,73 +262,31 @@ async def extrair_ceps_arquivo(arquivo: UploadFile):
 
 
 
-@app.post("/buscar-rua")
-async def buscar_rua(rua: str = Form(None), arquivo: UploadFile = File(None), formato: str = Form("txt")):
-    if rua and (arquivo and arquivo.filename):
-        return JSONResponse({"error": "Envie apenas uma rua ou um arquivo."}, status_code=400)
 
-    if arquivo and arquivo.filename:
-        valores = await extrair_valores_arquivo(arquivo)
-        resultados = []
-        for v in valores:
-            resultados.extend(buscar_por_rua(v))
-    elif rua:
-        resultados = buscar_por_rua(rua)
-    else:
-        return JSONResponse({"error": "Nenhuma rua ou arquivo enviado."}, status_code=400)
+@app.get("/buscar-rua")
+def buscar_rua_endpoint(rua: str):
+    resultados = buscar_por_rua(rua)
+    return {"total": len(resultados), "resultados": resultados}
 
-    return gerar_arquivo_resultado(resultados, formato)
+@app.get("/buscar-bairro")
+def buscar_bairro_endpoint(bairro: str):
+    resultados = buscar_por_bairro(bairro)
+    return {"total": len(resultados), "resultados": resultados}
 
-@app.post("/buscar-bairro")
-async def buscar_bairro(bairro: str = Form(None), arquivo: UploadFile = File(None), formato: str = Form("txt")):
-    if bairro and (arquivo and arquivo.filename):
-        return JSONResponse({"error": "Envie apenas um bairro ou um arquivo."}, status_code=400)
+@app.get("/buscar-cidade")
+def buscar_cidade_endpoint(cidade: str):
+    resultados = buscar_por_cidade(cidade)
+    return {"total": len(resultados), "resultados": resultados}
 
-    if arquivo and arquivo.filename:
-        valores = await extrair_valores_arquivo(arquivo)
-        resultados = []
-        for v in valores:
-            resultados.extend(buscar_por_bairro(v))
-    elif bairro:
-        resultados = buscar_por_bairro(bairro)
-    else:
-        return JSONResponse({"error": "Nenhum bairro ou arquivo enviado."}, status_code=400)
+@app.get("/buscar-estado")
+def buscar_estado_endpoint(estado: str):
+    resultados = buscar_por_estado(estado)
+    return {"total": len(resultados), "resultados": resultados}
 
-    return gerar_arquivo_resultado(resultados, formato)
 
-@app.post("/buscar-cidade")
-async def buscar_cidade(cidade: str = Form(None), arquivo: UploadFile = File(None), formato: str = Form("txt")):
-    if cidade and (arquivo and arquivo.filename):
-        return JSONResponse({"error": "Envie apenas uma cidade ou um arquivo."}, status_code=400)
-
-    if arquivo and arquivo.filename:
-        valores = await extrair_valores_arquivo(arquivo)
-        resultados = []
-        for v in valores:
-            resultados.extend(buscar_por_cidade(v))
-    elif cidade:
-        resultados = buscar_por_cidade(cidade)
-    else:
-        return JSONResponse({"error": "Nenhuma cidade ou arquivo enviado."}, status_code=400)
-
-    return gerar_arquivo_resultado(resultados, formato)
-
-@app.post("/buscar-estado")
-async def buscar_estado(estado: str = Form(None), arquivo: UploadFile = File(None), formato: str = Form("txt")):
-    if estado and (arquivo and arquivo.filename):
-        return JSONResponse({"error": "Envie apenas um estado ou um arquivo."}, status_code=400)
-
-    if arquivo and arquivo.filename:
-        valores = await extrair_valores_arquivo(arquivo)
-        resultados = []
-        for v in valores:
-            resultados.extend(buscar_por_estado(v))
-    elif estado:
-        resultados = buscar_por_estado(estado)
-    else:
-        return JSONResponse({"error": "Nenhum estado ou arquivo enviado."}, status_code=400)
-
-    return gerar_arquivo_resultado(resultados, formato)
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.post("/buscar")
 async def buscar(
