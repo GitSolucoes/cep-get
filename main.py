@@ -53,39 +53,7 @@ def get_stages(category_id):
         logger.error(f"Erro ao buscar stages do Bitrix (categoria {category_id}): {e}")
         return {}
 
-def formatar_dado(dado):
-    if dado is None:
-        return ""
-    if isinstance(dado, str):
-        return dado.strip()
-    return str(dado)
-
-def buscar_por_cep(cep):
-    cep_limpo = re.sub(r'\D', '', cep)
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                SELECT 
-                    "id", "title", "stage_id", "category_id", 
-                    TRIM("uf_crm_cep") as uf_crm_cep, 
-                    "uf_crm_contato", "date_create", "contato01", "contato02", 
-                    "ordem_de_servico", 
-                    TRIM("nome_do_cliente") as nome_do_cliente,
-                    "nome_da_mae", 
-                    "data_de_vencimento", "email", "cpf", "rg", "referencia", 
-                    TRIM("rua") as rua,
-                    "data_de_instalacao", "quais_operadoras_tem_viabilidade",
-                    TRIM("uf_crm_bairro") as uf_crm_bairro,
-                    TRIM("uf_crm_cidade") as uf_crm_cidade,
-                    "uf_crm_numero", "uf_crm_uf"
-                FROM deals
-                WHERE regexp_replace("uf_crm_cep", '[^0-9]', '', 'g') = %s;
-                """,
-                (cep_limpo,),
-            )
-            rows = cur.fetchall()
-
+def montar_resultado(rows):
     categorias = get_categories()
     stages_cache = {}
 
@@ -125,6 +93,85 @@ def buscar_por_cep(cep):
             "uf_crm_uf": formatar_dado(r[23]),
         })
     return resultados
+
+
+def formatar_dado(dado):
+    if dado is None:
+        return ""
+    if isinstance(dado, str):
+        return dado.strip()
+    return str(dado)
+
+def buscar_por_cep(cep):
+    cep_limpo = re.sub(r'\D', '', cep)
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT 
+                    "id", "title", "stage_id", "category_id", 
+                    TRIM("uf_crm_cep") as uf_crm_cep, 
+                    "uf_crm_contato", "date_create", "contato01", "contato02", 
+                    "ordem_de_servico", 
+                    TRIM("nome_do_cliente") as nome_do_cliente,
+                    "nome_da_mae", 
+                    "data_de_vencimento", "email", "cpf", "rg", "referencia", 
+                    TRIM("rua") as rua,
+                    "data_de_instalacao", "quais_operadoras_tem_viabilidade",
+                    TRIM("uf_crm_bairro") as uf_crm_bairro,
+                    TRIM("uf_crm_cidade") as uf_crm_cidade,
+                    "uf_crm_numero", "uf_crm_uf"
+                FROM deals
+                WHERE regexp_replace("uf_crm_cep", '[^0-9]', '', 'g') = %s;
+                """,
+                (cep_limpo,),
+            )
+            rows = cur.fetchall()
+    return montar_resultado(rows)
+
+
+def buscar_por_rua(rua):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT * FROM deals
+                WHERE rua ILIKE %s;
+                """,
+                (f"%{rua.strip()}%",)
+            )
+            rows = cur.fetchall()
+    return montar_resultado(rows)
+def buscar_por_bairro(bairro):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                'SELECT * FROM deals WHERE "uf_crm_bairro" ILIKE %s;',
+                (f"%{bairro.strip()}%",)
+            )
+            rows = cur.fetchall()
+    return montar_resultado(rows)
+
+def buscar_por_cidade(cidade):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                'SELECT * FROM deals WHERE "uf_crm_cidade" ILIKE %s;',
+                (f"%{cidade.strip()}%",)
+            )
+            rows = cur.fetchall()
+    return montar_resultado(rows)
+
+def buscar_por_estado(estado):
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                'SELECT * FROM deals WHERE "uf_crm_uf" ILIKE %s;',
+                (f"%{estado.strip()}%",)
+            )
+            rows = cur.fetchall()
+    return montar_resultado(rows)
+
 
 def buscar_varios_ceps(lista_ceps):
     ceps_limpos = [c.replace("-", "").strip() for c in lista_ceps if c.strip()]
@@ -212,6 +259,30 @@ async def extrair_ceps_arquivo(arquivo: UploadFile):
                 ceps = df[col].astype(str).tolist()
                 break
     return ceps
+
+
+
+
+@app.get("/buscar-rua")
+def buscar_rua_endpoint(rua: str):
+    resultados = buscar_por_rua(rua)
+    return {"total": len(resultados), "resultados": resultados}
+
+@app.get("/buscar-bairro")
+def buscar_bairro_endpoint(bairro: str):
+    resultados = buscar_por_bairro(bairro)
+    return {"total": len(resultados), "resultados": resultados}
+
+@app.get("/buscar-cidade")
+def buscar_cidade_endpoint(cidade: str):
+    resultados = buscar_por_cidade(cidade)
+    return {"total": len(resultados), "resultados": resultados}
+
+@app.get("/buscar-estado")
+def buscar_estado_endpoint(estado: str):
+    resultados = buscar_por_estado(estado)
+    return {"total": len(resultados), "resultados": resultados}
+
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
