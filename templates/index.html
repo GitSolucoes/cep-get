@@ -24,15 +24,25 @@
   </header>
 
   <main>
+    <!-- Formulários com opção de input manual ou upload de arquivo -->
     <section id="form-rua" class="form-busca" style="display: none; flex-direction: column; align-items: center;">
       <form id="rua-form" class="formulario fade-in">
         <h2>Consulta por Rua</h2>
-        <input type="text" id="rua" name="rua" class="form-campo" placeholder="Digite a rua..." required />
-        <label>Formato de Download:</label>
-        <select id="formato-rua" class="form-campo">
-          <option value="txt">TXT</option>
-          <option value="xlsx">Excel</option>
-        </select>
+        <div>
+          <label for="rua">Digite a rua:</label>
+          <input type="text" id="rua" name="rua" class="form-campo" placeholder="Digite a rua..." />
+        </div>
+        <div>
+          <label for="arquivo-rua">Ou envie um arquivo (.txt, .csv, .xlsx):</label>
+          <input type="file" id="arquivo-rua" name="arquivo" class="form-campo" accept=".txt,.csv,.xlsx" />
+        </div>
+        <div>
+          <label for="formato-rua">Formato de Download:</label>
+          <select id="formato-rua" class="form-campo">
+            <option value="txt">TXT</option>
+            <option value="xlsx">Excel</option>
+          </select>
+        </div>
         <button type="submit" class="form-botao">Buscar</button>
         <div id="carregando-rua" style="display:none;">Carregando...</div>
       </form>
@@ -41,12 +51,21 @@
     <section id="form-bairro" class="form-busca" style="display: none; flex-direction: column; align-items: center;">
       <form id="bairro-form" class="formulario fade-in">
         <h2>Consulta por Bairro</h2>
-        <input type="text" id="bairro" name="bairro" class="form-campo" placeholder="Digite o bairro..." required />
-        <label>Formato de Download:</label>
-        <select id="formato-bairro" class="form-campo">
-          <option value="txt">TXT</option>
-          <option value="xlsx">Excel</option>
-        </select>
+        <div>
+          <label for="bairro">Digite o bairro:</label>
+          <input type="text" id="bairro" name="bairro" class="form-campo" placeholder="Digite o bairro..." />
+        </div>
+        <div>
+          <label for="arquivo-bairro">Ou envie um arquivo (.txt, .csv, .xlsx):</label>
+          <input type="file" id="arquivo-bairro" name="arquivo" class="form-campo" accept=".txt,.csv,.xlsx" />
+        </div>
+        <div>
+          <label for="formato-bairro">Formato de Download:</label>
+          <select id="formato-bairro" class="form-campo">
+            <option value="txt">TXT</option>
+            <option value="xlsx">Excel</option>
+          </select>
+        </div>
         <button type="submit" class="form-botao">Buscar</button>
         <div id="carregando-bairro" style="display:none;">Carregando...</div>
       </form>
@@ -55,12 +74,21 @@
     <section id="form-cidade" class="form-busca" style="display: none; flex-direction: column; align-items: center;">
       <form id="cidade-form" class="formulario fade-in">
         <h2>Consulta por Cidade</h2>
-        <input type="text" id="cidade" name="cidade" class="form-campo" placeholder="Digite a cidade..." required />
-        <label>Formato de Download:</label>
-        <select id="formato-cidade" class="form-campo">
-          <option value="txt">TXT</option>
-          <option value="xlsx">Excel</option>
-        </select>
+        <div>
+          <label for="cidade">Digite a cidade:</label>
+          <input type="text" id="cidade" name="cidade" class="form-campo" placeholder="Digite a cidade..." />
+        </div>
+        <div>
+          <label for="arquivo-cidade">Ou envie um arquivo (.txt, .csv, .xlsx):</label>
+          <input type="file" id="arquivo-cidade" name="arquivo" class="form-campo" accept=".txt,.csv,.xlsx" />
+        </div>
+        <div>
+          <label for="formato-cidade">Formato de Download:</label>
+          <select id="formato-cidade" class="form-campo">
+            <option value="txt">TXT</option>
+            <option value="xlsx">Excel</option>
+          </select>
+        </div>
         <button type="submit" class="form-botao">Buscar</button>
         <div id="carregando-cidade" style="display:none;">Carregando...</div>
       </form>
@@ -69,67 +97,27 @@
     <section id="form-estado" class="form-busca" style="display: none; flex-direction: column; align-items: center;">
       <form id="estado-form" class="formulario fade-in">
         <h2>Consulta por Estado</h2>
-        <input type="text" id="estado" name="estado" class="form-campo" placeholder="Digite o estado..." required />
-        <label>Formato de Download:</label>
-        <select id="formato-estado" class="form-campo">
-          <option value="txt">TXT</option>
-          <option value="xlsx">Excel</option>
-        </select>
-        <button type="submit" class="form-botao">Buscar</button>
-        <div id="carregando-estado" style="display:none;">Carregando...</div>
-      </form>
-    </section>
-
-    <section id="form-cep" class="form-busca" style="display: none; flex-direction: column; align-items: center;">
-      <form id="cep-form" class="formulario fade-in">
-        <h2>Consulta de CEPs</h2>
         <div>
-          <label for="cep" class="form-label">Digite o CEP:</label>
-          <input type="text" id="cep" name="cep" class="form-campo" />
+          <label for="estado">Digite o estado:</label>
+          <input type="text" id="estado" name="estado" class="form-campo" placeholder="Digite o estado..." />
         </div>
         <div>
-          <label for="arquivo-cep" class="form-label">Ou envie um arquivo (.txt, .csv, .xlsx):</label>
-          <input type="file" id="arquivo-cep" name="arquivo" class="form-campo" accept=".txt,.csv,.xlsx" />
+          <label for="arquivo-estado">Ou envie um arquivo (.txt, .csv, .xlsx):</label>
+          <input type="file" id="arquivo-estado" name="arquivo" class="form-campo" accept=".txt,.csv,.xlsx" />
         </div>
         <div>
-          <label for="formato-cep" class="form-label">Formato de Download:</label>
-          <select id="formato-cep" name="formato" class="form-campo">
+          <label for="formato-estado">Formato de Download:</label>
+          <select id="formato-estado" class="form-campo">
             <option value="txt">TXT</option>
             <option value="xlsx">Excel</option>
           </select>
         </div>
         <button type="submit" class="form-botao">Buscar</button>
-        <div id="carregando-cep" style="display:none;">Carregando...</div>
+        <div id="carregando-estado" style="display:none;">Carregando...</div>
       </form>
     </section>
   </main>
 
   <div id="resultado"></div>
-
-  <script>
-    const botoes = document.querySelectorAll(".btn-opcao");
-    const formularios = {
-      rua: document.getElementById("form-rua"),
-      bairro: document.getElementById("form-bairro"),
-      cidade: document.getElementById("form-cidade"),
-      estado: document.getElementById("form-estado"),
-      cep: document.getElementById("form-cep"),
-    };
-
-    botoes.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        botoes.forEach((b) => b.classList.remove("ativo"));
-        btn.classList.add("ativo");
-
-        Object.values(formularios).forEach((f) => f.style.display = "none");
-        const id = btn.id.replace("btn-", "");
-        const form = formularios[id];
-        if (form) {
-          form.style.display = "flex";
-          form.scrollIntoView({ behavior: "smooth" });
-        }
-      });
-    });
-  </script>
 </body>
 </html>
