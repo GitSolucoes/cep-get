@@ -157,9 +157,28 @@
               card.innerHTML = `
                 <div class="card-section">
                   <p><strong>Cliente:</strong> ${res.cliente}</p>
-                  <p><strong>CEP:</strong> ${res.uf_crm_cep}</p> <!-- ✅ Correto -->
+                  <p><strong>CEP:</strong> ${res.uf_crm_cep}</p>
                   <p><strong>Categoria:</strong> ${res.categoria}</p>
                   <p><strong>Fase:</strong> ${res.fase}</p>
+                  <p><strong>Contato:</strong> ${res.contato}</p>
+                  <p><strong>Criado em:</strong> ${res.criado_em}</p>
+                  <p><strong>Contato 1:</strong> ${res.contato01}</p>
+                  <p><strong>Contato 2:</strong> ${res.contato02}</p>
+                  <p><strong>Ordem de Serviço:</strong> ${res.ordem_de_servico}</p>
+                  <p><strong>Nome do Cliente:</strong> ${res.nome_do_cliente}</p>
+                  <p><strong>Nome da Mãe:</strong> ${res.nome_da_mae}</p>
+                  <p><strong>Data de Vencimento:</strong> ${res.data_de_vencimento}</p>
+                  <p><strong>Email:</strong> ${res.email}</p>
+                  <p><strong>CPF:</strong> ${res.cpf}</p>
+                  <p><strong>RG:</strong> ${res.rg}</p>
+                  <p><strong>Referência:</strong> ${res.referencia}</p>
+                  <p><strong>Rua:</strong> ${res.rua}</p>
+                  <p><strong>Data de Instalação:</strong> ${res.data_de_instalacao}</p>
+                  <p><strong>Operadoras:</strong> ${res.quais_operadoras_tem_viabilidade}</p>
+                  <p><strong>Bairro:</strong> ${res.uf_crm_bairro}</p>
+                  <p><strong>Cidade:</strong> ${res.uf_crm_cidade}</p>
+                  <p><strong>Número:</strong> ${res.uf_crm_numero}</p>
+                  <p><strong>UF:</strong> ${res.uf_crm_uf}</p>
                 </div>`;
               resultadoDiv.appendChild(card);
             });
@@ -174,5 +193,6 @@
     });
   });
   </script>
+  
 </body>
 </html>
