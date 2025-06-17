@@ -263,7 +263,7 @@ async def extrair_ceps_arquivo(arquivo: UploadFile):
 
 
 
-@app.get("/buscar-rua")
+@app.post("/buscar-rua")
 def buscar_rua_endpoint(rua: str):
     resultados = buscar_por_rua(rua)
     return {"total": len(resultados), "resultados": resultados}
