@@ -165,7 +165,63 @@
         }
       });
     });
+document.getElementById("cep-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const carregando = document.getElementById("carregando-cep");
+    const resultadoDiv = document.getElementById("resultado");
+    const cepValor = document.getElementById("cep").value;
+    const arquivo = document.getElementById("arquivo-cep").files[0];
+    
+    carregando.style.display = "block";
+    resultadoDiv.innerHTML = "";
 
+    try {
+        const formData = new FormData();
+        
+        if (arquivo) {
+            formData.append("arquivo", arquivo);
+            formData.append("formato", document.getElementById("formato-cep").value);
+        } else if (cepValor) {
+            formData.append("cep", cepValor);
+        } else {
+            resultadoDiv.innerHTML = '<div class="nenhum-resultado">Digite um CEP ou selecione um arquivo.</div>';
+            return;
+        }
+
+        const response = await fetch("/buscar", {
+            method: "POST",
+            body: formData
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.resultados?.length > 0) {
+                data.resultados.forEach((res) => {
+                    const card = document.createElement("div");
+                    card.className = "resultado-card";
+                    card.innerHTML = `
+                        <div class="card-section">
+                            <p><strong>Cliente:</strong> ${res.cliente}</p>
+                            <p><strong>CEP:</strong> ${res.uf_crm_cep}</p>
+                            <!-- Restante dos campos como na função buscarGenerico -->
+                        </div>`;
+                    resultadoDiv.appendChild(card);
+                });
+            } else {
+                resultadoDiv.innerHTML = '<div class="nenhum-resultado">Nenhum resultado encontrado.</div>';
+            }
+        } else {
+            resultadoDiv.innerHTML = '<div class="nenhum-resultado">Erro na consulta.</div>';
+        }
+    } catch (error) {
+        resultadoDiv.innerHTML = '<div class="nenhum-resultado">Erro ao processar a requisição.</div>';
+        console.error("Erro:", error);
+    } finally {
+        carregando.style.display = "none";
+    }
+});
+
+    
     document.getElementById("rua-form").addEventListener("submit", (e) => {
       e.preventDefault();
       buscarGenerico("/buscar-rua", document.getElementById("rua").value, "carregando-rua");
