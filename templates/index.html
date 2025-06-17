@@ -24,15 +24,6 @@
   </header>
 
   <main>
-    <div style="text-align: center; margin-top: 10px">
-      <label for="origem-select">Origem dos dados:</label>
-      <select id="origem-select" class="form-campo" style="width: auto; display: inline-block;">
-        <option value="deals">Deals</option>
-        <option value="serasa">Serasa</option>
-      </select>
-    </div>
-
-    <!-- Formulários de consulta -->
     <section id="form-rua" class="form-busca" style="display: none; flex-direction: column; align-items: center;">
       <form id="rua-form" class="formulario fade-in">
         <h2>Consulta por Rua</h2>
@@ -71,27 +62,40 @@
 
     <section id="form-cep" class="form-busca" style="display: none; flex-direction: column; align-items: center;">
       <form id="cep-form" class="formulario fade-in">
-        <h2>Consulta por CEP</h2>
-        <input type="text" id="cep" name="cep" class="form-campo" placeholder="Digite o CEP..." />
+        <h2>Consulta de CEPs</h2>
+        <div>
+          <label for="cep" class="form-label">Digite o CEP:</label>
+          <input type="text" id="cep" name="cep" class="form-campo" />
+        </div>
+        <div>
+          <label for="arquivo-cep" class="form-label">Ou envie um arquivo (.txt, .csv, .xlsx):</label>
+          <input type="file" id="arquivo-cep" name="arquivo" class="form-campo" accept=".txt,.csv,.xlsx" />
+        </div>
+        <div>
+          <label for="formato-cep" class="form-label">Formato de Download:</label>
+          <select id="formato-cep" name="formato" class="form-campo">
+            <option value="txt">TXT</option>
+            <option value="xlsx">Excel</option>
+          </select>
+        </div>
         <button type="submit" class="form-botao">Buscar</button>
         <div id="carregando-cep" style="display:none;">Carregando...</div>
       </form>
     </section>
-
-    <div id="resultado"></div>
   </main>
+
+  <div id="resultado"></div>
 
 <script>
   async function buscarGenerico(endpoint, valor, carregandoId) {
     const carregando = document.getElementById(carregandoId);
     const resultadoDiv = document.getElementById("resultado");
-    const origem = document.getElementById("origem-select").value;
 
     carregando.style.display = "block";
     resultadoDiv.innerHTML = "";
 
-    const param = endpoint.split("-")[1] || "param";
-    const response = await fetch(`${endpoint}?${param}=${encodeURIComponent(valor)}&origem=${origem}`);
+    const param = endpoint.split("-")[1] || "param"; // fallback se não tiver "-"
+    const response = await fetch(`${endpoint}?${param}=${encodeURIComponent(valor)}`);
 
     carregando.style.display = "none";
 
@@ -162,25 +166,27 @@
       });
     });
 
-    document.getElementById("rua-form")?.addEventListener("submit", (e) => {
+    document.getElementById("rua-form").addEventListener("submit", (e) => {
       e.preventDefault();
       buscarGenerico("/buscar-rua", document.getElementById("rua").value, "carregando-rua");
     });
-    document.getElementById("bairro-form")?.addEventListener("submit", (e) => {
+    document.getElementById("bairro-form").addEventListener("submit", (e) => {
       e.preventDefault();
       buscarGenerico("/buscar-bairro", document.getElementById("bairro").value, "carregando-bairro");
     });
-    document.getElementById("cidade-form")?.addEventListener("submit", (e) => {
+    document.getElementById("cidade-form").addEventListener("submit", (e) => {
       e.preventDefault();
       buscarGenerico("/buscar-cidade", document.getElementById("cidade").value, "carregando-cidade");
     });
-    document.getElementById("estado-form")?.addEventListener("submit", (e) => {
+    document.getElementById("estado-form").addEventListener("submit", (e) => {
       e.preventDefault();
       buscarGenerico("/buscar-estado", document.getElementById("estado").value, "carregando-estado");
     });
-    document.getElementById("cep-form")?.addEventListener("submit", (e) => {
+    document.getElementById("cep-form").addEventListener("submit", (e) => {
       e.preventDefault();
-      buscarGenerico("/buscar-cep", document.getElementById("cep").value, "carregando-cep");
+      const cepValor = document.getElementById("cep").value;
+      // Se tiver arquivo, você pode criar um FormData e enviar como POST, mas no básico:
+      buscarGenerico("/buscar-cep", cepValor, "carregando-cep");
     });
   });
 </script>
