@@ -173,6 +173,11 @@ def buscar_por_estado(estado):
     return montar_resultado(rows)
 
 
+@app.get("/buscar-cep")
+def buscar_cep_endpoint(cep: str):
+    resultados = buscar_por_cep(cep)
+    return {"total": len(resultados), "resultados": resultados}
+
 def buscar_varios_ceps(lista_ceps):
     ceps_limpos = [c.replace("-", "").strip() for c in lista_ceps if c.strip()]
     with get_conn() as conn:
