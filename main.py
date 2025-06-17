@@ -55,9 +55,9 @@ def get_stages(category_id):
 
 def formatar_dado(dado):
     if dado is None:
-        return "N/A"
+        return ""
     if isinstance(dado, str):
-        return dado.strip() or "N/A"
+        return dado.strip()
     return str(dado)
 
 def buscar_por_cep(cep):
