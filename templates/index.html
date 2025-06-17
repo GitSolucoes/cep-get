@@ -24,48 +24,13 @@
   </header>
 
   <main>
-    <section id="form-rua" class="form-busca" style="display: none; flex-direction: column; align-items: center;">
-      <form id="rua-form" class="formulario fade-in">
-        <h2>Consulta por Rua</h2>
-        <input type="text" id="rua" name="rua" class="form-campo" placeholder="Digite a rua..." required />
-        <button type="submit" class="form-botao">Buscar</button>
-        <div id="carregando-rua" style="display:none;">Carregando...</div>
-      </form>
-    </section>
-
-    <section id="form-bairro" class="form-busca" style="display: none; flex-direction: column; align-items: center;">
-      <form id="bairro-form" class="formulario fade-in">
-        <h2>Consulta por Bairro</h2>
-        <input type="text" id="bairro" name="bairro" class="form-campo" placeholder="Digite o bairro..." required />
-        <button type="submit" class="form-botao">Buscar</button>
-        <div id="carregando-bairro" style="display:none;">Carregando...</div>
-      </form>
-    </section>
-
-    <section id="form-cidade" class="form-busca" style="display: none; flex-direction: column; align-items: center;">
-      <form id="cidade-form" class="formulario fade-in">
-        <h2>Consulta por Cidade</h2>
-        <input type="text" id="cidade" name="cidade" class="form-campo" placeholder="Digite a cidade..." required />
-        <button type="submit" class="form-botao">Buscar</button>
-        <div id="carregando-cidade" style="display:none;">Carregando...</div>
-      </form>
-    </section>
-
-    <section id="form-estado" class="form-busca" style="display: none; flex-direction: column; align-items: center;">
-      <form id="estado-form" class="formulario fade-in">
-        <h2>Consulta por Estado</h2>
-        <input type="text" id="estado" name="estado" class="form-campo" placeholder="Digite o estado..." required />
-        <button type="submit" class="form-botao">Buscar</button>
-        <div id="carregando-estado" style="display:none;">Carregando...</div>
-      </form>
-    </section>
-
-    <section id="form-cep" class="form-busca" style="display: none; flex-direction: column; align-items: center;">
-      <form id="cep-form" class="formulario fade-in">
-        <h2>Consulta de CEPs</h2>
+    <section id="form-section" style="flex-direction: column; align-items: center;">
+      <form id="busca-form" class="formulario fade-in">
+        <h2 id="form-titulo">Consulta</h2>
+        <input type="hidden" id="tipo-busca" name="tipo_busca" value="cep" />
         <div>
-          <label for="cep" class="form-label">Digite o CEP:</label>
-          <input type="text" id="cep" name="cep" class="form-campo" />
+          <label for="valor" class="form-label" id="label-valor">Digite o CEP:</label>
+          <input type="text" id="valor" name="valor" class="form-campo" />
         </div>
         <div>
           <label for="arquivo-cep" class="form-label">Ou envie um arquivo (.txt, .csv, .xlsx):</label>
@@ -79,7 +44,7 @@
           </select>
         </div>
         <button type="submit" class="form-botao">Buscar</button>
-        <div id="carregando-cep" style="display:none;">Carregando...</div>
+        <div id="carregando" style="display:none;">Carregando...</div>
       </form>
     </section>
   </main>
@@ -87,48 +52,18 @@
   <div id="resultado"></div>
 
   <script>
-    async function buscarGenerico(endpoint, valor, carregandoId) {
-      const carregando = document.getElementById(carregandoId);
-      const resultadoDiv = document.getElementById("resultado");
-
-      carregando.style.display = "block";
-      resultadoDiv.innerHTML = "";
-
-      const response = await fetch(`${endpoint}?${endpoint.split("-")[1]}=${encodeURIComponent(valor)}`);
-
-      carregando.style.display = "none";
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.resultados?.length > 0) {
-          data.resultados.forEach((res) => {
-            const card = document.createElement("div");
-            card.className = "resultado-card";
-            card.innerHTML = `
-              <div class="card-section">
-                <p><strong>Cliente:</strong> ${res.cliente}</p>
-                <p><strong>CEP:</strong> ${res.uf_crm_cep}</p>
-                <p><strong>Categoria:</strong> ${res.categoria}</p>
-                <p><strong>Fase:</strong> ${res.fase}</p>
-              </div>`;
-            resultadoDiv.appendChild(card);
-          });
-        } else {
-          resultadoDiv.innerHTML = '<div class="nenhum-resultado">Nenhum resultado encontrado.</div>';
-        }
-      } else {
-        resultadoDiv.innerHTML = '<div class="nenhum-resultado">Erro na consulta.</div>';
-      }
-    }
-
     window.addEventListener("DOMContentLoaded", () => {
       const botoes = document.querySelectorAll(".btn-opcao");
-      const formularios = {
-        rua: document.getElementById("form-rua"),
-        bairro: document.getElementById("form-bairro"),
-        cidade: document.getElementById("form-cidade"),
-        estado: document.getElementById("form-estado"),
-        cep: document.getElementById("form-cep"),
+      const formTitulo = document.getElementById("form-titulo");
+      const labelValor = document.getElementById("label-valor");
+      const tipoBuscaInput = document.getElementById("tipo-busca");
+
+      const labels = {
+        cep: "Digite o CEP:",
+        rua: "Digite a rua:",
+        bairro: "Digite o bairro:",
+        cidade: "Digite a cidade:",
+        estado: "Digite o estado:"
       };
 
       botoes.forEach((btn) => {
@@ -136,35 +71,39 @@
           botoes.forEach((b) => b.classList.remove("ativo"));
           btn.classList.add("ativo");
 
-          Object.values(formularios).forEach((f) => f.style.display = "none");
-          const id = btn.id.replace("btn-", "");
-          const form = formularios[id];
-          if (form) {
-            form.style.display = "flex";
-            form.scrollIntoView({ behavior: "smooth" });
-          }
+          const tipo = btn.id.replace("btn-", "");
+          tipoBuscaInput.value = tipo;
+          formTitulo.textContent = `Consulta por ${tipo.toUpperCase()}`;
+          labelValor.textContent = labels[tipo];
+          document.getElementById("valor").value = "";
+          document.getElementById("arquivo-cep").value = "";
+          document.getElementById("resultado").innerHTML = "";
+          document.getElementById("form-section").scrollIntoView({ behavior: "smooth" });
         });
       });
 
-      document.getElementById("cep-form").addEventListener("submit", async (e) => {
+      document.getElementById("busca-form").addEventListener("submit", async (e) => {
         e.preventDefault();
-
-        let cep = document.getElementById("cep").value;
-        cep = cep.replace(/\D/g, "");
-
+        const tipoBusca = tipoBuscaInput.value;
+        let valor = document.getElementById("valor").value.trim();
         const arquivo = document.getElementById("arquivo-cep").files[0];
         const formato = document.getElementById("formato-cep").value;
-        const carregando = document.getElementById("carregando-cep");
+        const carregando = document.getElementById("carregando");
         const resultadoDiv = document.getElementById("resultado");
+
+        if (tipoBusca === "cep") {
+          valor = valor.replace(/\D/g, "");
+        }
 
         carregando.style.display = "block";
         resultadoDiv.innerHTML = "";
 
         const formData = new FormData();
+        formData.append("tipo_busca", tipoBusca);
         if (arquivo) {
           formData.append("arquivo", arquivo);
         } else {
-          formData.append("cep", cep);
+          formData.append("valor", valor);
         }
         formData.append("formato", formato);
 
@@ -225,22 +164,6 @@
           const erro = await response.json();
           resultadoDiv.innerHTML = `<div class="nenhum-resultado">Erro: ${erro.error || "Erro desconhecido."}</div>`;
         }
-      });
-      document.getElementById("rua-form").addEventListener("submit", (e) => {
-        e.preventDefault();
-        buscarGenerico("/buscar-rua", document.getElementById("rua").value, "carregando-rua");
-      });
-      document.getElementById("bairro-form").addEventListener("submit", (e) => {
-        e.preventDefault();
-        buscarGenerico("/buscar-bairro", document.getElementById("bairro").value, "carregando-bairro");
-      });
-      document.getElementById("cidade-form").addEventListener("submit", (e) => {
-        e.preventDefault();
-        buscarGenerico("/buscar-cidade", document.getElementById("cidade").value, "carregando-cidade");
-      });
-      document.getElementById("estado-form").addEventListener("submit", (e) => {
-        e.preventDefault();
-        buscarGenerico("/buscar-estado", document.getElementById("estado").value, "carregando-estado");
       });
     });
   </script>
