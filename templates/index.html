@@ -86,109 +86,109 @@
 
   <div id="resultado"></div>
 
-  <script>
-    async function buscarGenerico(endpoint, valor, carregandoId) {
-      const carregando = document.getElementById(carregandoId);
-      const resultadoDiv = document.getElementById("resultado");
+<script>
+  async function buscarGenerico(endpoint, valor, carregandoId) {
+    const carregando = document.getElementById(carregandoId);
+    const resultadoDiv = document.getElementById("resultado");
 
-      carregando.style.display = "block";
-      resultadoDiv.innerHTML = "";
+    carregando.style.display = "block";
+    resultadoDiv.innerHTML = "";
 
-      // extrair parâmetro do endpoint (ex: buscar-rua => rua)
-      const param = endpoint.split("-")[1] || "param";
-      const response = await fetch(`${endpoint}?${param}=${encodeURIComponent(valor)}`);
+    const param = endpoint.split("-")[1] || "param"; // fallback se não tiver "-"
+    const response = await fetch(`${endpoint}?${param}=${encodeURIComponent(valor)}`);
 
-      carregando.style.display = "none";
+    carregando.style.display = "none";
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.resultados?.length > 0) {
-          data.resultados.forEach((res) => {
-            const card = document.createElement("div");
-            card.className = "resultado-card";
-            card.innerHTML = `
-              <div class="card-section">
-                <p><strong>Cliente:</strong> ${res.cliente}</p>
-                <p><strong>CEP:</strong> ${res.uf_crm_cep}</p>
-                <p><strong>Categoria:</strong> ${res.categoria}</p>
-                <p><strong>Fase:</strong> ${res.fase}</p>
-                <p><strong>Contato:</strong> ${res.contato}</p>
-                <p><strong>Criado em:</strong> ${res.criado_em}</p>
-                <p><strong>Contato 1:</strong> ${res.contato01}</p>
-                <p><strong>Contato 2:</strong> ${res.contato02}</p>
-                <p><strong>Ordem de Serviço:</strong> ${res.ordem_de_servico}</p>
-                <p><strong>Nome do Cliente:</strong> ${res.nome_do_cliente}</p>
-                <p><strong>Nome da Mãe:</strong> ${res.nome_da_mae}</p>
-                <p><strong>Data de Vencimento:</strong> ${res.data_de_vencimento}</p>
-                <p><strong>Email:</strong> ${res.email}</p>
-                <p><strong>CPF:</strong> ${res.cpf}</p>
-                <p><strong>RG:</strong> ${res.rg}</p>
-                <p><strong>Referência:</strong> ${res.referencia}</p>
-                <p><strong>Rua:</strong> ${res.rua}</p>
-                <p><strong>Data de Instalação:</strong> ${res.data_de_instalacao}</p>
-                <p><strong>Operadoras:</strong> ${res.quais_operadoras_tem_viabilidade}</p>
-                <p><strong>Bairro:</strong> ${res.uf_crm_bairro}</p>
-                <p><strong>Cidade:</strong> ${res.uf_crm_cidade}</p>
-                <p><strong>Número:</strong> ${res.uf_crm_numero}</p>
-                <p><strong>UF:</strong> ${res.uf_crm_uf}</p>
-              </div>`;
-            resultadoDiv.appendChild(card);
-          });
-        } else {
-          resultadoDiv.innerHTML = '<div class="nenhum-resultado">Nenhum resultado encontrado.</div>';
-        }
-      } else {
-        resultadoDiv.innerHTML = '<div class="nenhum-resultado">Erro na consulta.</div>';
-      }
-    }
-
-    window.addEventListener("DOMContentLoaded", () => {
-      const botoes = document.querySelectorAll(".btn-opcao");
-      const formularios = {
-        rua: document.getElementById("form-rua"),
-        bairro: document.getElementById("form-bairro"),
-        cidade: document.getElementById("form-cidade"),
-        estado: document.getElementById("form-estado"),
-        cep: document.getElementById("form-cep"),
-      };
-
-      botoes.forEach((btn) => {
-        btn.addEventListener("click", () => {
-          botoes.forEach((b) => b.classList.remove("ativo"));
-          btn.classList.add("ativo");
-
-          Object.values(formularios).forEach((f) => f.style.display = "none");
-          const id = btn.id.replace("btn-", "");
-          const form = formularios[id];
-          if (form) {
-            form.style.display = "flex";
-            form.scrollIntoView({ behavior: "smooth" });
-          }
+    if (response.ok) {
+      const data = await response.json();
+      if (data.resultados?.length > 0) {
+        data.resultados.forEach((res) => {
+          const card = document.createElement("div");
+          card.className = "resultado-card";
+          card.innerHTML = `
+            <div class="card-section">
+              <p><strong>Cliente:</strong> ${res.cliente}</p>
+              <p><strong>CEP:</strong> ${res.uf_crm_cep}</p>
+              <p><strong>Categoria:</strong> ${res.categoria}</p>
+              <p><strong>Fase:</strong> ${res.fase}</p>
+              <p><strong>Contato:</strong> ${res.contato}</p>
+              <p><strong>Criado em:</strong> ${res.criado_em}</p>
+              <p><strong>Contato 1:</strong> ${res.contato01}</p>
+              <p><strong>Contato 2:</strong> ${res.contato02}</p>
+              <p><strong>Ordem de Serviço:</strong> ${res.ordem_de_servico}</p>
+              <p><strong>Nome do Cliente:</strong> ${res.nome_do_cliente}</p>
+              <p><strong>Nome da Mãe:</strong> ${res.nome_da_mae}</p>
+              <p><strong>Data de Vencimento:</strong> ${res.data_de_vencimento}</p>
+              <p><strong>Email:</strong> ${res.email}</p>
+              <p><strong>CPF:</strong> ${res.cpf}</p>
+              <p><strong>RG:</strong> ${res.rg}</p>
+              <p><strong>Referência:</strong> ${res.referencia}</p>
+              <p><strong>Rua:</strong> ${res.rua}</p>
+              <p><strong>Data de Instalação:</strong> ${res.data_de_instalacao}</p>
+              <p><strong>Operadoras:</strong> ${res.quais_operadoras_tem_viabilidade}</p>
+              <p><strong>Bairro:</strong> ${res.uf_crm_bairro}</p>
+              <p><strong>Cidade:</strong> ${res.uf_crm_cidade}</p>
+              <p><strong>Número:</strong> ${res.uf_crm_numero}</p>
+              <p><strong>UF:</strong> ${res.uf_crm_uf}</p>
+            </div>`;
+          resultadoDiv.appendChild(card);
         });
-      });
+      } else {
+        resultadoDiv.innerHTML = '<div class="nenhum-resultado">Nenhum resultado encontrado.</div>';
+      }
+    } else {
+      resultadoDiv.innerHTML = '<div class="nenhum-resultado">Erro na consulta.</div>';
+    }
+  }
 
-      document.getElementById("rua-form").addEventListener("submit", (e) => {
-        e.preventDefault();
-        buscarGenerico("/buscar-rua", document.getElementById("rua").value, "carregando-rua");
-      });
-      document.getElementById("bairro-form").addEventListener("submit", (e) => {
-        e.preventDefault();
-        buscarGenerico("/buscar-bairro", document.getElementById("bairro").value, "carregando-bairro");
-      });
-      document.getElementById("cidade-form").addEventListener("submit", (e) => {
-        e.preventDefault();
-        buscarGenerico("/buscar-cidade", document.getElementById("cidade").value, "carregando-cidade");
-      });
-      document.getElementById("estado-form").addEventListener("submit", (e) => {
-        e.preventDefault();
-        buscarGenerico("/buscar-estado", document.getElementById("estado").value, "carregando-estado");
-      });
-      document.getElementById("cep-form").addEventListener("submit", (e) => {
-        e.preventDefault();
-        const cepValor = document.getElementById("cep").value;
-        buscarGenerico("/buscar-cep", cepValor, "carregando-cep");
+  window.addEventListener("DOMContentLoaded", () => {
+    const botoes = document.querySelectorAll(".btn-opcao");
+    const formularios = {
+      rua: document.getElementById("form-rua"),
+      bairro: document.getElementById("form-bairro"),
+      cidade: document.getElementById("form-cidade"),
+      estado: document.getElementById("form-estado"),
+      cep: document.getElementById("form-cep"),
+    };
+
+    botoes.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        botoes.forEach((b) => b.classList.remove("ativo"));
+        btn.classList.add("ativo");
+
+        Object.values(formularios).forEach((f) => f.style.display = "none");
+        const id = btn.id.replace("btn-", "");
+        const form = formularios[id];
+        if (form) {
+          form.style.display = "flex";
+          form.scrollIntoView({ behavior: "smooth" });
+        }
       });
     });
-  </script>
+
+    document.getElementById("rua-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      buscarGenerico("/buscar-rua", document.getElementById("rua").value, "carregando-rua");
+    });
+    document.getElementById("bairro-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      buscarGenerico("/buscar-bairro", document.getElementById("bairro").value, "carregando-bairro");
+    });
+    document.getElementById("cidade-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      buscarGenerico("/buscar-cidade", document.getElementById("cidade").value, "carregando-cidade");
+    });
+    document.getElementById("estado-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      buscarGenerico("/buscar-estado", document.getElementById("estado").value, "carregando-estado");
+    });
+    document.getElementById("cep-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const cepValor = document.getElementById("cep").value;
+      // Se tiver arquivo, você pode criar um FormData e enviar como POST, mas no básico:
+      buscarGenerico("/buscar-cep", cepValor, "carregando-cep");
+    });
+  });
+</script>
 </body>
 </html>
