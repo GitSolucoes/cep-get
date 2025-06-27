@@ -121,7 +121,7 @@ def buscar_por_cep(cep):
                     TRIM("uf_crm_bairro") as uf_crm_bairro,
                     TRIM("uf_crm_cidade") as uf_crm_cidade,
                     "uf_crm_numero", "uf_crm_uf"
-                FROM deals
+                FROM bitrix
                 WHERE regexp_replace("uf_crm_cep", '[^0-9]', '', 'g') = %s;
                 """,
                 (cep_limpo,),
@@ -135,7 +135,7 @@ def buscar_por_rua(rua):
         with conn.cursor() as cur:
             cur.execute(
                 """
-                SELECT * FROM deals
+                SELECT * FROM bitrix
                 WHERE rua ILIKE %s;
                 """,
                 (f"%{rua.strip()}%",)
@@ -146,7 +146,7 @@ def buscar_por_bairro(bairro):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                'SELECT * FROM deals WHERE "uf_crm_bairro" ILIKE %s;',
+                'SELECT * FROM bitrix WHERE "uf_crm_bairro" ILIKE %s;',
                 (f"%{bairro.strip()}%",)
             )
             rows = cur.fetchall()
@@ -156,7 +156,7 @@ def buscar_por_cidade(cidade):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                'SELECT * FROM deals WHERE "uf_crm_cidade" ILIKE %s;',
+                'SELECT * FROM bitrix WHERE "uf_crm_cidade" ILIKE %s;',
                 (f"%{cidade.strip()}%",)
             )
             rows = cur.fetchall()
@@ -166,7 +166,7 @@ def buscar_por_estado(estado):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
-                'SELECT * FROM deals WHERE "uf_crm_uf" ILIKE %s;',
+                'SELECT * FROM bitrix WHERE "uf_crm_uf" ILIKE %s;',
                 (f"%{estado.strip()}%",)
             )
             rows = cur.fetchall()
@@ -197,7 +197,7 @@ def buscar_varios_ceps(lista_ceps):
                     TRIM("uf_crm_bairro") as uf_crm_bairro,
                     TRIM("uf_crm_cidade") as uf_crm_cidade,
                     "uf_crm_numero", "uf_crm_uf"
-                FROM deals
+                FROM bitrix
                 WHERE replace("uf_crm_cep", '-', '') = ANY(%s);
                 """,
                 (ceps_limpos,),
