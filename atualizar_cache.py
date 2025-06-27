@@ -88,7 +88,7 @@ def upsert_deal(conn, deal):
     with conn.cursor() as cur:
         cur.execute(
             """
-            INSERT INTO deals (
+            INSERT INTO bitrix (
                 id, title, stage_id, category_id, uf_crm_cep, uf_crm_contato, date_create,
                 contato01, contato02, ordem_de_servico, nome_do_cliente, nome_da_mae,
                 data_de_vencimento, email, cpf, rg, referencia, rua, data_de_instalacao,
