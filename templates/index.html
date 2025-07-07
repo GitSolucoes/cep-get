@@ -9,6 +9,7 @@
       href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap"
       rel="stylesheet"
     />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   </head>
   <body>
     <div class="logo">
@@ -156,18 +157,18 @@
         resultadoDiv.innerHTML = "";
 
         const param = endpoint.split("-")[1] || "param"; // fallback se não tiver "-"
-        const response = await fetch(
-         endpoint
-        );
+        const response = await fetch(endpoint);
 
         carregando.style.display = "none";
 
         if (response.ok) {
           const data = await response.json();
-          console.log(data)
+          console.log(data);
           if (data.length > 0) {
+            let qtd = 0;
+            let sheet = [];
             for (const res of data) {
-              const card = document.createElement("div");
+              qtd++;
 
               // Aqui a lógica para enriquecer os leads
 
@@ -192,8 +193,37 @@
 
               // alert(data2["message"])
 
-              card.className = "resultado-card";
-              card.innerHTML = `
+              sheet.push({
+                CLIENTE: res.cliente,
+                CEP: res.uf_crm_cep,
+                CATEGORIA: res.categoria,
+                FASE: res.fase,
+                CONTATO: res.contato,
+                CRIADO_EM: res.criado_em,
+                CONTATO01: res.contato01,
+                CONTATO02: res.contato02,
+                ORDEM_DE_SERVIÇO: res.ordem_de_servico,
+                NOME_DO_CLIENTE: res.nome_do_cliente,
+                NOME_DA_MAE: res.nome_da_mae,
+                DATA_DE_VENCIMENTO: res.data_de_vencimento,
+                EMAIL: res.email,
+                CPF: res.cpf,
+                RG: res.rg,
+                REFERENCIA: res.referencia,
+                RUA: res.rua,
+                DATA_DE_INSTALACAO: res.data_de_instalacao,
+                OPERADORAS: res.quais_operadoras_tem_viabilidade,
+                BAIRRO: res.uf_crm_bairro,
+                CIDADE: res.uf_crm_cidade,
+                NUMERO: res.uf_crm_numero,
+                UF: res.uf_crm_uf,
+                BASE: res.base,
+              });
+
+              if (qtd < 20) {
+                const card = document.createElement("div");
+                card.className = "resultado-card";
+                card.innerHTML = `
                   <div class="card-section">
                     <p><strong>Cliente:</strong> ${res.cliente}</p>
                     <p><strong>CEP:</strong> ${res.uf_crm_cep}</p>
@@ -220,8 +250,14 @@
                     <p><strong>UF:</strong> ${res.uf_crm_uf}</p>
                     <p><strong>BASE:</strong> ${res.base}</p>
                   </div>`;
-              resultadoDiv.appendChild(card);
+                resultadoDiv.appendChild(card);
+              }
             }
+
+            const ws = XLSX.utils.json_to_sheet(sheet);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Pessoas");
+            XLSX.writeFile(wb, "dados.xlsx");
           } else {
             resultadoDiv.innerHTML =
               '<div class="nenhum-resultado">Nenhum resultado encontrado.</div>';
@@ -336,7 +372,7 @@
             e.preventDefault();
             buscarGenerico(
               `/search/bairro/${document.getElementById("bairro").value}`,
-            "carregando-bairro"
+              "carregando-bairro"
             );
           });
         document
@@ -353,8 +389,8 @@
           .addEventListener("submit", (e) => {
             e.preventDefault();
             buscarGenerico(
-               `/search/estado/${document.getElementById("estado").value}`,
-            "carregando-estado"
+              `/search/estado/${document.getElementById("estado").value}`,
+              "carregando-estado"
             );
           });
         document.getElementById("cep-form").addEventListener("submit", (e) => {
