@@ -1,5 +1,10 @@
-from fastapi import FastAPI, Request, Form, UploadFile, File
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse, FileResponse
+from fastapi import FastAPI, Request, Form, UploadFile, File, Body
+from fastapi.responses import (
+    HTMLResponse,
+    JSONResponse,
+    StreamingResponse,
+    FileResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import io
@@ -24,6 +29,7 @@ BITRIX_API_BASE = "https://marketingsolucoes.bitrix24.com.br/rest/5332/8zyo7yj1r
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def get_conn():
     return psycopg2.connect(
         dbname=os.getenv("DB_NAME"),
@@ -33,25 +39,45 @@ def get_conn():
         port=os.getenv("DB_PORT"),
     )
 
+
+def get_conn_mateus():
+    return psycopg2.connect(
+        dbname=os.getenv("DB_NAME_MATEUS"),
+        user=os.getenv("DB_USER_MATEUS"),
+        password=os.getenv("DB_PASSWORD_MATEUS"),
+        host=os.getenv("DB_HOST_MATEUS"),
+        port=os.getenv("DB_PORT_MATEUS"),
+    )
+
+
 def get_categories():
     try:
-        resp = requests.get(f"{BITRIX_API_BASE}/crm.category.list", params={"entityTypeId": 2})
+        resp = requests.get(
+            f"{BITRIX_API_BASE}/crm.category.list", params={"entityTypeId": 2}
+        )
         resp.raise_for_status()
         data = resp.json()
-        return {cat["id"]: cat["name"] for cat in data.get("result", {}).get("categories", [])}
+        return {
+            cat["id"]: cat["name"]
+            for cat in data.get("result", {}).get("categories", [])
+        }
     except Exception as e:
         logger.error(f"Erro ao buscar categorias do Bitrix: {e}")
         return {}
 
+
 def get_stages(category_id):
     try:
-        resp = requests.get(f"{BITRIX_API_BASE}/crm.dealcategory.stage.list", params={"id": category_id})
+        resp = requests.get(
+            f"{BITRIX_API_BASE}/crm.dealcategory.stage.list", params={"id": category_id}
+        )
         resp.raise_for_status()
         data = resp.json()
         return {stage["STATUS_ID"]: stage["NAME"] for stage in data.get("result", [])}
     except Exception as e:
         logger.error(f"Erro ao buscar stages do Bitrix (categoria {category_id}): {e}")
         return {}
+
 
 def montar_resultado(rows):
     categorias = get_categories()
@@ -66,32 +92,39 @@ def montar_resultado(rows):
             stages_cache[cat_id] = get_stages(cat_id)
         fase_nome = stages_cache[cat_id].get(r[2], r[2])
 
-        resultados.append({
-            "id": r[0],
-            "cliente": formatar_dado(r[1]),
-            "fase": formatar_dado(fase_nome),
-            "categoria": formatar_dado(categoria_nome),
-            "uf_crm_cep": formatar_dado(r[4]),
-            "contato": formatar_dado(r[5]),
-            "criado_em": r[6].isoformat() if hasattr(r[6], "isoformat") else formatar_dado(r[6]),
-            "contato01": formatar_dado(r[7]),
-            "contato02": formatar_dado(r[8]),
-            "ordem_de_servico": formatar_dado(r[9]),
-            "nome_do_cliente": formatar_dado(r[10]),
-            "nome_da_mae": formatar_dado(r[11]),
-            "data_de_vencimento": formatar_dado(r[12]),
-            "email": formatar_dado(r[13]),
-            "cpf": formatar_dado(r[14]),
-            "rg": formatar_dado(r[15]),
-            "referencia": formatar_dado(r[16]),
-            "rua": formatar_dado(r[17]),
-            "data_de_instalacao": formatar_dado(r[18]),
-            "quais_operadoras_tem_viabilidade": formatar_dado(r[19]),
-            "uf_crm_bairro": formatar_dado(r[20]),
-            "uf_crm_cidade": formatar_dado(r[21]),
-            "uf_crm_numero": formatar_dado(r[22]),
-            "uf_crm_uf": formatar_dado(r[23]),
-        })
+        resultados.append(
+            {
+                "id": r[0],
+                "cliente": formatar_dado(r[1]),
+                "fase": formatar_dado(fase_nome),
+                "categoria": formatar_dado(categoria_nome),
+                "uf_crm_cep": formatar_dado(r[4]),
+                "contato": formatar_dado(r[5]),
+                "criado_em": (
+                    r[6].isoformat()
+                    if hasattr(r[6], "isoformat")
+                    else formatar_dado(r[6])
+                ),
+                "contato01": formatar_dado(r[7]),
+                "contato02": formatar_dado(r[8]),
+                "ordem_de_servico": formatar_dado(r[9]),
+                "nome_do_cliente": formatar_dado(r[10]),
+                "nome_da_mae": formatar_dado(r[11]),
+                "data_de_vencimento": formatar_dado(r[12]),
+                "email": formatar_dado(r[13]),
+                "cpf": formatar_dado(r[14]),
+                "rg": formatar_dado(r[15]),
+                "referencia": formatar_dado(r[16]),
+                "rua": formatar_dado(r[17]),
+                "data_de_instalacao": formatar_dado(r[18]),
+                "quais_operadoras_tem_viabilidade": formatar_dado(r[19]),
+                "uf_crm_bairro": formatar_dado(r[20]),
+                "uf_crm_cidade": formatar_dado(r[21]),
+                "uf_crm_numero": formatar_dado(r[22]),
+                "uf_crm_uf": formatar_dado(r[23]),
+                "base": formatar_dado(r[27]),
+            }
+        )
     return resultados
 
 
@@ -102,8 +135,9 @@ def formatar_dado(dado):
         return dado.strip()
     return str(dado)
 
+
 def buscar_por_cep(cep):
-    cep_limpo = re.sub(r'\D', '', cep)
+    cep_limpo = re.sub(r"\D", "", cep)
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -138,36 +172,42 @@ def buscar_por_rua(rua):
                 SELECT * FROM bitrix
                 WHERE rua ILIKE %s;
                 """,
-                (f"%{rua.strip()}%",)
+                (f"%{rua.strip()}%",),
             )
             rows = cur.fetchall()
     return montar_resultado(rows)
+
+
 def buscar_por_bairro(bairro):
+    result: list = []
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 'SELECT * FROM bitrix WHERE "uf_crm_bairro" ILIKE %s;',
-                (f"%{bairro.strip()}%",)
+                (f"%{bairro.strip()}%",),
             )
-            rows = cur.fetchall()
-    return montar_resultado(rows)
+            rows_bitrix = cur.fetchall()
+            result.extend(rows_bitrix)
+    return montar_resultado(rows_bitrix)
+
 
 def buscar_por_cidade(cidade):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 'SELECT * FROM bitrix WHERE "uf_crm_cidade" ILIKE %s;',
-                (f"%{cidade.strip()}%",)
+                (f"%{cidade.strip()}%",),
             )
             rows = cur.fetchall()
     return montar_resultado(rows)
+
 
 def buscar_por_estado(estado):
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 'SELECT * FROM bitrix WHERE "uf_crm_uf" ILIKE %s;',
-                (f"%{estado.strip()}%",)
+                (f"%{estado.strip()}%",),
             )
             rows = cur.fetchall()
     return montar_resultado(rows)
@@ -177,6 +217,7 @@ def buscar_por_estado(estado):
 def buscar_cep_endpoint(cep: str):
     resultados = buscar_por_cep(cep)
     return {"total": len(resultados), "resultados": resultados}
+
 
 def buscar_varios_ceps(lista_ceps):
     ceps_limpos = [c.replace("-", "").strip() for c in lista_ceps if c.strip()]
@@ -216,33 +257,40 @@ def buscar_varios_ceps(lista_ceps):
             stages_cache[cat_id] = get_stages(cat_id)
         fase_nome = stages_cache[cat_id].get(r[2], r[2])
 
-        resultados.append({
-            "id": r[0],
-            "cliente": formatar_dado(r[1]),
-            "fase": formatar_dado(fase_nome),
-            "categoria": formatar_dado(categoria_nome),
-            "uf_crm_cep": formatar_dado(r[4]),
-            "contato": formatar_dado(r[5]),
-            "criado_em": r[6].isoformat() if hasattr(r[6], "isoformat") else formatar_dado(r[6]),
-            "contato01": formatar_dado(r[7]),
-            "contato02": formatar_dado(r[8]),
-            "ordem_de_servico": formatar_dado(r[9]),
-            "nome_do_cliente": formatar_dado(r[10]),
-            "nome_da_mae": formatar_dado(r[11]),
-            "data_de_vencimento": formatar_dado(r[12]),
-            "email": formatar_dado(r[13]),
-            "cpf": formatar_dado(r[14]),
-            "rg": formatar_dado(r[15]),
-            "referencia": formatar_dado(r[16]),
-            "rua": formatar_dado(r[17]),
-            "data_de_instalacao": formatar_dado(r[18]),
-            "quais_operadoras_tem_viabilidade": formatar_dado(r[19]),
-            "uf_crm_bairro": formatar_dado(r[20]),
-            "uf_crm_cidade": formatar_dado(r[21]),
-            "uf_crm_numero": formatar_dado(r[22]),
-            "uf_crm_uf": formatar_dado(r[23]),
-        })
+        resultados.append(
+            {
+                "id": r[0],
+                "cliente": formatar_dado(r[1]),
+                "fase": formatar_dado(fase_nome),
+                "categoria": formatar_dado(categoria_nome),
+                "uf_crm_cep": formatar_dado(r[4]),
+                "contato": formatar_dado(r[5]),
+                "criado_em": (
+                    r[6].isoformat()
+                    if hasattr(r[6], "isoformat")
+                    else formatar_dado(r[6])
+                ),
+                "contato01": formatar_dado(r[7]),
+                "contato02": formatar_dado(r[8]),
+                "ordem_de_servico": formatar_dado(r[9]),
+                "nome_do_cliente": formatar_dado(r[10]),
+                "nome_da_mae": formatar_dado(r[11]),
+                "data_de_vencimento": formatar_dado(r[12]),
+                "email": formatar_dado(r[13]),
+                "cpf": formatar_dado(r[14]),
+                "rg": formatar_dado(r[15]),
+                "referencia": formatar_dado(r[16]),
+                "rua": formatar_dado(r[17]),
+                "data_de_instalacao": formatar_dado(r[18]),
+                "quais_operadoras_tem_viabilidade": formatar_dado(r[19]),
+                "uf_crm_bairro": formatar_dado(r[20]),
+                "uf_crm_cidade": formatar_dado(r[21]),
+                "uf_crm_numero": formatar_dado(r[22]),
+                "uf_crm_uf": formatar_dado(r[23]),
+            }
+        )
     return resultados
+
 
 async def extrair_ceps_arquivo(arquivo: UploadFile):
     nome = arquivo.filename.lower()
@@ -266,6 +314,97 @@ async def extrair_ceps_arquivo(arquivo: UploadFile):
     return ceps
 
 
+def select_from_database(param: str, value: str, source: str):
+    conn = None
+    rows = None
+
+    match (source):
+        case "bitrix":
+            if param in "bairro":
+                param = "uf_crm_bairro"
+            elif param in "cidade":
+                param = "uf_crm_cidade"
+            elif param in "numero":
+                param = "uf_crm_numero"
+            elif param in "uf":
+                param = "uf_crm_uf"
+
+            try:
+                conn = get_conn()
+                with conn.cursor() as curr:
+                    curr.execute(f"SELECT * FROM bitrix WHERE {param} LIKE '%{value}%'")
+                    print(f"SELECT * FROM bitrix WHERE {param} LIKE '%{value}%'")
+                    rows = curr.fetchall()
+            except Exception as e:
+                print(e)
+            finally:
+                if conn is not None:
+                    conn.close()
+                return rows
+
+        case "mateus":
+            try:
+                conn = get_conn_mateus()
+                with conn.cursor() as curr:
+                    curr.execute(
+                        f"SELECT * FROM public.geral WHERE {param} LIKE '%{value}%'"
+                    )
+                    print(f"SELECT * FROM public.geral WHERE {param} LIKE '%{value}%'")
+                    rows = curr.fetchall()
+            except Exception as e:
+                print(f"ERRO AAAAAQ : {e}")
+            finally:
+                if conn is not None:
+                    conn.close()
+                list = []
+
+                print(rows)
+
+                for row in rows:
+                    list.append(
+                        {
+                            "cpf": row[0],
+                            "nome_do_cliente": row[1],
+                            "contato01": row[2],
+                            "rua": row[3],
+                            "uf_crm_numero": row[4],
+                            "uf_crm_bairro": row[5],
+                            "uf_crm_cep": row[6],
+                            "uf_crm_cidade": row[7],
+                            "uf_crm_uf": row[8],
+                            "email": row[9],
+                            "base": row[10],
+                        }
+                    )
+                return list
+
+
+@app.get("/search/{param}/{value}")
+def search(param: str, value: str):
+    param = param.strip()
+    result = []
+    sources = ["bitrix", "mateus"]
+
+    for source in sources:
+        if source == "bitrix":
+            bitrix_results = montar_resultado(
+                select_from_database(param=param, value=value, source=source)
+            )
+            result.extend(bitrix_results)
+            print("bitrix")
+            print(bitrix_results)
+            print(len(bitrix_results))
+
+        else:
+            mateus_results = select_from_database(
+                param=param, value=value, source=source
+            )
+            result.extend(mateus_results)
+            print("mateus")
+            print(mateus_results)
+            print(len(mateus_results))
+
+    return result
 
 
 @app.get("/buscar-rua")
@@ -273,15 +412,18 @@ def buscar_rua_endpoint(rua: str):
     resultados = buscar_por_rua(rua)
     return {"total": len(resultados), "resultados": resultados}
 
+
 @app.get("/buscar-bairro")
 def buscar_bairro_endpoint(bairro: str):
     resultados = buscar_por_bairro(bairro)
     return {"total": len(resultados), "resultados": resultados}
 
+
 @app.get("/buscar-cidade")
 def buscar_cidade_endpoint(cidade: str):
     resultados = buscar_por_cidade(cidade)
     return {"total": len(resultados), "resultados": resultados}
+
 
 @app.get("/buscar-estado")
 def buscar_estado_endpoint(estado: str):
@@ -292,6 +434,7 @@ def buscar_estado_endpoint(estado: str):
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
 
 @app.post("/buscar")
 async def buscar(
@@ -347,6 +490,8 @@ async def buscar(
             status_code=400,
         )
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=1433, reload=True)
