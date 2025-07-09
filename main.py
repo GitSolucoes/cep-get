@@ -333,7 +333,6 @@ def select_from_database(param: str, value: str, source: str):
                 conn = get_conn()
                 with conn.cursor() as curr:
                     curr.execute(f"SELECT * FROM bitrix WHERE {param} LIKE '%{value}%'")
-                    print(f"SELECT * FROM bitrix WHERE {param} LIKE '%{value}%'")
                     rows = curr.fetchall()
             except Exception as e:
                 print(e)
@@ -382,6 +381,7 @@ def select_from_database(param: str, value: str, source: str):
 @app.get("/search/{param}/{value}")
 def search(param: str, value: str):
     param = param.strip()
+    value = value.upper()
     result = []
     sources = ["bitrix", "mateus"]
 
@@ -391,18 +391,14 @@ def search(param: str, value: str):
                 select_from_database(param=param, value=value, source=source)
             )
             result.extend(bitrix_results)
-            print("bitrix")
-            print(bitrix_results)
-            print(len(bitrix_results))
+            
 
         else:
             mateus_results = select_from_database(
                 param=param, value=value, source=source
             )
             result.extend(mateus_results)
-            print("mateus")
-            print(mateus_results)
-            print(len(mateus_results))
+           
 
     return result
 
