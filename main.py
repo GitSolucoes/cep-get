@@ -402,6 +402,37 @@ def search(param: str, value: str):
 
     return result
 
+from typing import List
+
+from pydantic import BaseModel
+
+class SearchRequest(BaseModel):
+    values: List[str]
+
+@app.post("/search-amount/{param}")
+def search_amount (param: str, values: SearchRequest) :
+    sources = ["bitrix", "mateus"]
+    result = []
+
+    for value in values.values :
+        value = value.upper()
+        for source in sources :
+            if source == "bitrix":
+                bitrix_results = montar_resultado(
+                    select_from_database(param=param, value=value, source=source)
+                )
+                result.extend(bitrix_results)
+                
+
+            else:
+                mateus_results = select_from_database(
+                    param=param, value=value, source=source
+                )
+                result.extend(mateus_results)
+
+    print(result)
+    return result
+
 
 @app.get("/buscar-rua")
 def buscar_rua_endpoint(rua: str):

@@ -24,6 +24,7 @@
         <button id="btn-cidade" class="btn-opcao">CIDADE</button>
         <button id="btn-estado" class="btn-opcao">ESTADO</button>
         <button id="btn-cep" class="btn-opcao">CEP</button>
+        <button id="btn-excel" class="btn-opcao">Excel</button>
       </div>
     </header>
 
@@ -65,6 +66,31 @@
           />
           <button type="submit" class="form-botao">Buscar</button>
           <div id="carregando-bairro" style="display: none">Carregando...</div>
+        </form>
+      </section>
+
+      <section
+        id="form-excel"
+        class="form-busca"
+        style="display: none; flex-direction: column; align-items: center"
+      >
+        <form id="bairro-form" class="formulario fade-in">
+          <h2>Consulta por Planilha</h2>
+          <input
+            type="file"
+            id="excel-file"
+            class="form-campo"
+            placeholder="Digite o bairro..."
+            required
+          />
+          <select id="select-file" required>
+            <option value="rua">Rua</option>
+            <option value="cidade">Cidade</option>
+            <option value="bairro">Bairro</option>
+            <option value="estado">Estado</option>
+          </select>
+          <button type="submit" class="form-botao">Buscar</button>
+          <div id="carregando-excel" style="display: none">Carregando...</div>
         </form>
       </section>
 
@@ -276,6 +302,7 @@
           cidade: document.getElementById("form-cidade"),
           estado: document.getElementById("form-estado"),
           cep: document.getElementById("form-cep"),
+          excel: document.getElementById("form-excel"),
         };
 
         botoes.forEach((btn) => {
@@ -294,6 +321,57 @@
             }
           });
         });
+        document
+          .getElementById("form-excel")
+          .addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const file = document.getElementById("excel-file");
+            const select = document.getElementById("select-file");
+
+            const sheetFile = file.files[0];
+
+            if (!sheetFile) {
+              alert("Selecione um arquivo Excel!");
+              return;
+            }
+
+            const reader = new FileReader();
+
+            let lines;
+
+            reader.onload = async (e) => {
+              const data = new Uint8Array(e.target.result);
+              const workbook = XLSX.read(data, { type: "array" });
+
+              const sheetName = workbook.SheetNames[0];
+              const planilha = workbook.Sheets[sheetName];
+
+              lines = XLSX.utils.sheet_to_json(planilha, { header: 1 });
+
+              let values = [];
+
+              for (const line of lines) {
+                values.push(line[0]);
+              }
+
+              const res = await fetch(`/search-amount/${select.value}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ values: values }),
+              });
+
+              const dataRes = await res.json();
+
+              const ws = XLSX.utils.json_to_sheet(dataRes);
+              const wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, "Pessoas");
+              XLSX.writeFile(wb, "dados.xlsx");
+            };
+
+            reader.readAsArrayBuffer(sheetFile);
+          });
+
         document
           .getElementById("cep-form")
           .addEventListener("submit", async (e) => {
